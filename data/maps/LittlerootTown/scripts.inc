@@ -113,26 +113,47 @@ LittlerootTown_OnFrame:
 	.2byte 0
 
 LittlerootTown_EventScript_StepOffTruckMale::
-	lockall
-	setvar VAR_0x8004, 5
-	setvar VAR_0x8005, 8
-	call LittlerootTown_EventScript_GoInsideWithMom
-	setflag FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_TRUCK
-	warpsilent MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F, 8, 8
-	waitstate
-	releaseall
-	end
+lockall
+
+delay 15
+playse SE_LEDGE
+applymovement LOCALID_PLAYER, LittlerootTown_Movement_PlayerStepOffTruck
+waitmovement 0
+setflag FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_TRUCK
+setflag FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_TRUCK
+@ Skip the entire moving-in / clock / rival introduction.
+setvar VAR_LITTLEROOT_INTRO_STATE, 7
+@ Put Littleroot directly into "Saving Birch" state.
+setvar VAR_LITTLEROOT_TOWN_STATE, 2
+@ Move the twin away from the Route 101 entrance.
+setobjectxyperm LOCALID_TWIN, 10, 1
+giveitem ITEM_RARE_CANDY, 99
+setobjectmovementtype LOCALID_TWIN, MOVEMENT_TYPE_FACE_UP
+clearflag FLAG_HIDE_LITTLEROOT_TOWN_FAT_MAN
+clearflag FLAG_HIDE_MAP_NAME_POPUP
+releaseall
+end
 
 LittlerootTown_EventScript_StepOffTruckFemale::
-	lockall
-	setvar VAR_0x8004, 14
-	setvar VAR_0x8005, 8
-	call LittlerootTown_EventScript_GoInsideWithMom
-	setflag FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_TRUCK
-	warpsilent MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F, 2, 8
-	waitstate
-	releaseall
-	end
+lockall
+delay 15
+playse SE_LEDGE
+applymovement LOCALID_PLAYER, LittlerootTown_Movement_PlayerStepOffTruck
+waitmovement 0
+setflag FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_TRUCK
+setflag FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_TRUCK
+@ Skip the entire moving-in / clock / rival introduction.
+setvar VAR_LITTLEROOT_INTRO_STATE, 7
+@ Put Littleroot directly into "Saving Birch" state.
+setvar VAR_LITTLEROOT_TOWN_STATE, 2
+@ Move the twin away from the Route 101 entrance.
+setobjectxyperm LOCALID_TWIN, 10, 1
+giveitem ITEM_RARE_CANDY, 99
+setobjectmovementtype LOCALID_TWIN, MOVEMENT_TYPE_FACE_UP
+clearflag FLAG_HIDE_LITTLEROOT_TOWN_FAT_MAN
+clearflag FLAG_HIDE_MAP_NAME_POPUP
+releaseall
+end
 
 LittlerootTown_EventScript_GoInsideWithMom::
 	delay 15
