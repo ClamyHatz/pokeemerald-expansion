@@ -11,11 +11,28 @@ PetalburgCity_MapScripts::
 
 PetalburgCity_OnTransition:
 	setflag FLAG_VISITED_PETALBURG_CITY
-	call_if_eq VAR_PETALBURG_CITY_STATE, 0, PetalburgCity_EventScript_MoveGymBoyToWestEntrance
+	call_if_eq VAR_PETALBURG_CITY_STATE, 0, PetalburgCity_EventScript_SkipFirstPetalburgIntro
 	call_if_eq VAR_PETALBURG_CITY_STATE, 2, PetalburgCity_EventScript_DisableMapNameAndMusic
 	call_if_eq VAR_PETALBURG_CITY_STATE, 4, PetalburgCity_EventScript_DisableMapNameAndMusic
 	call_if_eq VAR_PETALBURG_GYM_STATE, 8, PetalburgCity_EventScript_SetGymDoorsUnlocked
 	end
+
+PetalburgCity_EventScript_SkipFirstPetalburgIntro::
+	@ Pretend the first Norman/Wally sequence already happened.
+	setvar VAR_PETALBURG_CITY_STATE, 3
+	setvar VAR_PETALBURG_GYM_STATE, 2
+
+	@ Prevent Scott's west-exit encounter.
+	setvar VAR_SCOTT_PETALBURG_ENCOUNTER, 1
+
+	@ Story NPCs that should already be gone.
+	setflag FLAG_HIDE_PETALBURG_CITY_WALLY
+	setflag FLAG_HIDE_PETALBURG_CITY_WALLYS_MOM
+	setflag FLAG_HIDE_PETALBURG_CITY_SCOTT
+	setflag FLAG_HIDE_LITTLEROOT_TOWN_BIRCHS_LAB_RIVAL
+
+	special InitBirchState
+	return
 
 PetalburgCity_EventScript_OldRodFisherman::
 	lock
