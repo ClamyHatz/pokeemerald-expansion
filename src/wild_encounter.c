@@ -1046,12 +1046,17 @@ static bool8 IsWildLevelAllowedByRepel(u8 wildLevel)
 {
     u8 i;
 
+    if (FlagGet(FLAG_INFINITE_REPEL))
+        return FALSE;
+
     if (!REPEL_STEP_COUNT)
         return TRUE;
 
     for (i = 0; i < PARTY_SIZE; i++)
     {
-        if (I_REPEL_INCLUDE_FAINTED == GEN_1 || I_REPEL_INCLUDE_FAINTED >= GEN_6 || GetMonData(&gPlayerParty[i], MON_DATA_HP))
+        if (I_REPEL_INCLUDE_FAINTED == GEN_1
+         || I_REPEL_INCLUDE_FAINTED >= GEN_6
+         || GetMonData(&gPlayerParty[i], MON_DATA_HP))
         {
             if (!GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG))
                 return wildLevel >= GetMonData(&gPlayerParty[i], MON_DATA_LEVEL);

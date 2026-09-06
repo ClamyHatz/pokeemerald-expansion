@@ -151,6 +151,40 @@ const struct Item gItemsInfo[] =
         .iconPic = gItemIcon_QuestionMark,
         .iconPalette = gItemIconPalette_QuestionMark,
     },
+    [ITEM_PORTABLE_HEAL] =
+    {
+        .name = _("Portable Heal"),
+        .price = 0,
+        .description = COMPOUND_STRING(
+            "A reusable device\n"
+            "that fully heals\n"
+            "your entire party."),
+        .importance = 1,
+        .pocket = POCKET_KEY_ITEMS,
+        .type = ITEM_USE_FIELD,
+        .fieldUseFunc = ItemUseOutOfBattle_PortableHeal,
+
+        // Temporary graphics. We'll replace these with custom art.
+        .iconPic = gItemIcon_Potion,
+        .iconPalette = gItemIconPalette_Potion,
+    },
+    [ITEM_INFINITE_REPEL] =
+    {
+        .name = _("Infinite Repel"),
+        .price = 0,
+        .description = COMPOUND_STRING(
+            "A reusable device\n"
+            "that toggles wild\n"
+            "encounters on or off."),
+        .importance = 1,
+        .pocket = POCKET_KEY_ITEMS,
+        .type = ITEM_USE_FIELD,
+        .fieldUseFunc = ItemUseOutOfBattle_InfiniteRepel,
+
+        // Temporary icon for testing.
+        .iconPic = gItemIcon_Repel,
+        .iconPalette = gItemIconPalette_Repel,
+    },
 
 // Poké Balls
 
@@ -173,7 +207,7 @@ const struct Item gItemsInfo[] =
     [ITEM_POKE_BALL] =
     {
         .name = _("Poké Ball"),
-        .price = 200,
+        .price = 1,
         .description = COMPOUND_STRING(
             "A tool used for\n"
             "catching wild\n"
@@ -189,7 +223,7 @@ const struct Item gItemsInfo[] =
     [ITEM_GREAT_BALL] =
     {
         .name = _("Great Ball"),
-        .price = 600,
+        .price = 1,
         .description = COMPOUND_STRING(
             "A good Ball with a\n"
             "higher catch rate\n"
@@ -205,7 +239,7 @@ const struct Item gItemsInfo[] =
     [ITEM_ULTRA_BALL] =
     {
         .name = _("Ultra Ball"),
-        .price = (I_PRICE >= GEN_7) ? 800 : 1200,
+        .price = 1,
         .description = COMPOUND_STRING(
             "A better Ball with\n"
             "a higher catch rate\n"

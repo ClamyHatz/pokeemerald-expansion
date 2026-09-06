@@ -33,6 +33,7 @@
 #include "pokeblock.h"
 #include "pokemon.h"
 #include "script.h"
+#include "script_pokemon_util.h"
 #include "sound.h"
 #include "strings.h"
 #include "string_util.h"
@@ -70,6 +71,8 @@ static void BootUpSoundTMHM(u8);
 static void Task_ShowTMHMContainedMessage(u8);
 static void UseTMHMYesNo(u8);
 static void UseTMHM(u8);
+static void ItemUseOnFieldCB_PortableHeal(u8 taskId);
+static void ItemUseOnFieldCB_InfiniteRepel(u8 taskId);
 static void Task_StartUseRepel(u8);
 static void Task_StartUseLure(u8 taskId);
 static void Task_UseRepel(u8);
@@ -84,6 +87,9 @@ static const u8 sText_CantDismountBike[] = _("You can't dismount your BIKE here.
 static const u8 sText_ItemFinderNearby[] = _("Huh?\nThe ITEMFINDER's responding!\pThere's an item buried around here!{PAUSE_UNTIL_PRESS}");
 static const u8 sText_ItemFinderOnTop[] = _("Oh!\nThe ITEMFINDER's shaking wildly!{PAUSE_UNTIL_PRESS}");
 static const u8 sText_ItemFinderNothing[] = _("… … … …Nope!\nThere's no response.{PAUSE_UNTIL_PRESS}");
+static const u8 sText_PortableHeal[] = _("Your Pokémon were fully healed!");
+static const u8 sText_InfiniteRepelOn[] = _("Infinite Repel turned ON.");
+static const u8 sText_InfiniteRepelOff[] = _("Infinite Repel turned OFF.");
 static const u8 sText_CoinCase[] = _("Your COINS:\n{STR_VAR_1}{PAUSE_UNTIL_PRESS}");
 static const u8 sText_PowderQty[] = _("POWDER QTY: {STR_VAR_1}{PAUSE_UNTIL_PRESS}");
 static const u8 sText_BootedUpTM[] = _("Booted up a TM.");
@@ -162,6 +168,53 @@ static void Task_CallItemUseOnFieldCallback(u8 taskId)
 {
     if (IsWeatherNotFadingIn() == 1)
         sItemUseOnFieldCB(taskId);
+}
+
+void ItemUseOutOfBattle_PortableHeal(u8 var)
+{
+    sItemUseOnFieldCB = ItemUseOnFieldCB_PortableHeal;
+    SetUpItemUseOnFieldCallback(var);
+}
+
+static void ItemUseOnFieldCB_PortableHeal(u8 taskId)
+{
+    HealPlayerParty();
+
+    DisplayItemMessageOnField(
+        taskId,
+        sText_PortableHeal,
+        Task_CloseCantUseKeyItemMessage
+    );
+}
+
+void ItemUseOutOfBattle_InfiniteRepel(u8 var)
+{
+    sItemUseOnFieldCB = ItemUseOnFieldCB_InfiniteRepel;
+    SetUpItemUseOnFieldCallback(var);
+}
+
+static void ItemUseOnFieldCB_InfiniteRepel(u8 taskId)
+{
+    if (FlagGet(FLAG_INFINITE_REPEL))
+    {
+        FlagClear(FLAG_INFINITE_REPEL);
+
+        DisplayItemMessageOnField(
+            taskId,
+            sText_InfiniteRepelOff,
+            Task_CloseCantUseKeyItemMessage
+        );
+    }
+    else
+    {
+        FlagSet(FLAG_INFINITE_REPEL);
+
+        DisplayItemMessageOnField(
+            taskId,
+            sText_InfiniteRepelOn,
+            Task_CloseCantUseKeyItemMessage
+        );
+    }
 }
 
 static void DisplayCannotUseItemMessage(u8 taskId, bool8 isUsingRegisteredKeyItemOnField, const u8 *str)
