@@ -269,6 +269,25 @@ static inline bool32 ShouldRandomizeItem(u16 itemId)
 
 #include "data/randomizer/item_whitelist.h"
 
+static u16 GetRandomizerPoolItem(struct Sfc32State *state)
+{
+    u32 whitelistSize = ARRAY_COUNT(sRandomizerItemWhitelist);
+
+    // Increase this to make TMs more common.
+    const u32 tmWeight = 30;
+
+    u32 index = RandomizerNextRange(state, whitelistSize + tmWeight);
+
+    if (index < whitelistSize)
+        return sRandomizerItemWhitelist[index];
+
+    // We hit a TM slot, so now choose any TM uniformly.
+    return RandomizerNextRange(
+        state,
+        ITEM_TM100 - ITEM_TM01 + 1
+    ) + ITEM_TM01;
+}
+
 // Given a found item and its location in the game, returns a replacement for that item.
 u16 RandomizeFoundItem(u16 itemId, u8 mapNum, u8 mapGroup, u8 localId)
 {
@@ -300,8 +319,8 @@ u16 RandomizeFoundItem(u16 itemId, u8 mapNum, u8 mapGroup, u8 localId)
 
     // Randomize everything else to everything else.
     do {
-        result = sRandomizerItemWhitelist[RandomizerNextRange(&state, ITEM_WHITELIST_SIZE)];
-    } while(!ShouldRandomizeItem(result) || IsItemTMHM(result));
+        result = GetRandomizerPoolItem(&state);
+    } while(!ShouldRandomizeItem(result) || IsItemHM(result));
 
     return result;
 
@@ -337,12 +356,9 @@ u16 RandomizeGiftItem(u16 itemId, u16 amount, u8 mapNum, u8 mapGroup)
     // Everything else comes from the normal safe item pool.
     do
     {
-        result =
-            sRandomizerItemWhitelist[
-                RandomizerNextRange(&state, ITEM_WHITELIST_SIZE)
-            ];
+        result = GetRandomizerPoolItem(&state);
     }
-    while (!ShouldRandomizeItem(result) || IsItemTMHM(result));
+    while (!ShouldRandomizeItem(result) || IsItemHM(result));
 
     return result;
 }
@@ -437,8 +453,8 @@ static void GetGroupRange(u16 group, enum RandomizerSpeciesMode mode, u16 *resul
         // Choose a 10.24% range around the base BST.
         s32 base, minScaled, maxScaled;
         base = group * 1024;
-        minScaled = (base - group * 100) / 1024;
-        maxScaled = (base + group * 100) / 1024;
+        minScaled = (base - group * 200) / 1024;
+        maxScaled = (base + group * 200) / 1024;
         *resultMin = (u16)max(minScaled, 0);
         *resultMax =(u16)min(maxScaled, GROUP_INVALID-1);
     }

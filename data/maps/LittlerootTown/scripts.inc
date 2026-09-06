@@ -926,7 +926,17 @@ LittlerootTown_EventScript_GiveRunningShoes::
 	message LittlerootTown_Text_SwitchShoesWithRunningShoes
 	waitfanfare
 	setflag FLAG_RECEIVED_RUNNING_SHOES
+
+	@ Randolocke starter kit
+	additem ITEM_INFINITE_REPEL, 1
+	additem ITEM_PORTABLE_HEAL, 1
+	additem ITEM_MACH_BIKE, 1
+	additem ITEM_POKE_BALL, 100
+	additem ITEM_GREAT_BALL, 10
+	additem ITEM_BIG_NUGGET, 999
+
 	msgbox LittlerootTown_Text_ExplainRunningShoes, MSGBOX_DEFAULT
+	msgbox LittlerootTown_Text_ExplainOtherItems, MSGBOX_DEFAULT
 	msgbox LittlerootTown_Text_ComeHomeIfAnythingHappens, MSGBOX_DEFAULT
 	closemessage
 	delay 30
@@ -969,6 +979,18 @@ LittlerootTown_Text_ExplainRunningShoes:
 	.string "RUNNING SHOES to run extra-fast!\p"
 	.string "“Slip on these RUNNING SHOES and race\n"
 	.string "in the great outdoors!”$"
+
+LittlerootTown_Text_ExplainOtherItems:
+	.string "I packed a few extra things for\n"
+	.string "your journey!\p"
+	.string "A PORTABLE HEAL so you can heal\n"
+	.string "on the go.\p"
+	.string "An INFINITE REPEL to keep the\n"
+	.string "annoying creatures at bay\p"
+	.string "Some POKé BALLS to catch\n"
+	.string "as much as you want!\p"
+	.string "And a few BIG NUGGETS for\n"
+	.string "some pocket change.$"
 
 LittlerootTown_Text_ComeHomeIfAnythingHappens:
 	.string "… … … … … … … …\n"
