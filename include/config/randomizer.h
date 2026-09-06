@@ -35,13 +35,13 @@
 // If undefined, the feature will be enabled if one of the flags below is set.
 // If defined and set to TRUE, the feature will always be enabled.
 // If defined and set to FALSE, the feature will always be disabled.
-//#define FORCE_RANDOMIZE_WILD_MON                  TRUE
-//#define FORCE_RANDOMIZE_FIELD_ITEMS               TRUE
-//#define FORCE_RANDOMIZE_TRAINER_MON               TRUE
-//#define FORCE_RANDOMIZE_FIXED_MON                 TRUE
-//#define FORCE_RANDOMIZE_STARTER_AND_GIFT_MON      TRUE
-//#define FORCE_RANDOMIZE_EGG_MON                   TRUE
-//#define FORCE_RANDOMIZE_ABILITIES                 TRUE
+#define FORCE_RANDOMIZE_WILD_MON                  TRUE
+#define FORCE_RANDOMIZE_FIELD_ITEMS               TRUE
+#define FORCE_RANDOMIZE_TRAINER_MON               TRUE
+#define FORCE_RANDOMIZE_FIXED_MON                 TRUE
+#define FORCE_RANDOMIZE_STARTER_AND_GIFT_MON      TRUE
+#define FORCE_RANDOMIZE_EGG_MON                   TRUE
+#define FORCE_RANDOMIZE_ABILITIES                 TRUE
 
 // These flags control whether a particular randomization feature is active.
 // They are ignored and disabled if the flags above are set.
