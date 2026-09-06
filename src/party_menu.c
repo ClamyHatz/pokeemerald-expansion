@@ -78,6 +78,7 @@
 
 enum {
     MENU_SUMMARY,
+    MENU_LEVEL_TO_CAP,
     MENU_SWITCH,
     MENU_CANCEL1,
     MENU_ITEM,
@@ -271,6 +272,7 @@ static void LoadPartyMenuBoxes(u8);
 static void LoadPartyMenuPokeballGfx(void);
 static bool8 CreatePartyMonSpritesLoop(void);
 static bool8 RenderPartyMenuBoxes(void);
+static void Task_WaitForLevelCapMessage(u8 taskId);
 static void CreateCancelConfirmPokeballSprites(void);
 static void CreateCancelConfirmWindows(u8);
 static void Task_ExitPartyMenu(u8);
@@ -482,6 +484,7 @@ static void ShiftMoveSlot(struct Pokemon *, u8, u8);
 static void BlitBitmapToPartyWindow_LeftColumn(u8, u8, u8, u8, u8, bool8);
 static void BlitBitmapToPartyWindow_RightColumn(u8, u8, u8, u8, u8, bool8);
 static void CursorCb_Summary(u8);
+static void CursorCb_LevelToCap(u8);
 static void CursorCb_Switch(u8);
 static void CursorCb_Cancel1(u8);
 static void CursorCb_Item(u8);
@@ -979,6 +982,16 @@ static void LoadPartyMenuBoxes(u8 layout)
         sPartyMenuBoxes[3].infoRects = &sPartyBoxInfoRects[PARTY_BOX_LEFT_COLUMN];
     else if (layout != PARTY_LAYOUT_SINGLE)
         sPartyMenuBoxes[1].infoRects = &sPartyBoxInfoRects[PARTY_BOX_LEFT_COLUMN];
+}
+
+static void Task_WaitForLevelCapMessage(u8 taskId)
+{
+    if (IsPartyMenuTextPrinterActive() != TRUE
+     && (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON)))
+    {
+        PlaySE(SE_SELECT);
+        Task_ReturnToChooseMonAfterText(taskId);
+    }
 }
 
 static void RenderPartyMenuBox(u8 slot)
@@ -2526,6 +2539,9 @@ static void DisplayPartyPokemonLevelCheck(struct Pokemon *mon, struct PartyMenuB
     }
 }
 
+static const u8 sText_AlreadyAtLevelCap[] =
+    _("Already at the current level cap.");
+
 static void DisplayPartyPokemonLevel(u8 level, struct PartyMenuBox *menuBox)
 {
     ConvertIntToDecimalStringN(gStringVar2, level, STR_CONV_MODE_LEFT_ALIGN, 3);
@@ -2861,6 +2877,7 @@ static void SetPartyMonFieldSelectionActions(struct Pokemon *mons, u8 slotId)
 
     sPartyMenuInternal->numActions = 0;
     AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, MENU_SUMMARY);
+    AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, MENU_LEVEL_TO_CAP);
 
     // Add field moves to action list
     for (i = 0; i < MAX_MON_MOVES; i++)
@@ -3029,6 +3046,64 @@ static void CursorCb_Summary(u8 taskId)
     PlaySE(SE_SELECT);
     sPartyMenuInternal->exitCallback = CB2_ShowPokemonSummaryScreen;
     Task_ClosePartyMenu(taskId);
+}
+
+static void CursorCb_LevelToCap(u8 taskId)
+{
+    struct Pokemon *mon = &gPlayerParty[gPartyMenu.slotId];
+    u16 species = GetMonData(mon, MON_DATA_SPECIES);
+    u8 currentLevel = GetMonData(mon, MON_DATA_LEVEL);
+    u32 levelCap = GetCurrentLevelCap();
+    u32 exp;
+
+    PlaySE(SE_SELECT);
+
+    if (currentLevel >= levelCap)
+    {
+        // Close the Pokémon action menu before displaying the message.
+        PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[0]);
+
+        DisplayPartyMenuMessage(sText_AlreadyAtLevelCap, TRUE);
+        ScheduleBgCopyTilemapToVram(2);
+
+        // Wait for A/B before returning to the party screen.
+        gTasks[taskId].func = Task_WaitForLevelCapMessage;
+        return;
+    }
+
+    // Save the old stats for the normal level-up comparison screen.
+    BufferMonStatsToTaskData(mon, sPartyMenuInternal->data);
+
+    sInitialLevel = currentLevel;
+    sFinalLevel = levelCap;
+
+    // Set EXP directly to the current cap.
+    exp = gExperienceTables[gSpeciesInfo[species].growthRate][levelCap];
+    SetMonData(mon, MON_DATA_EXP, &exp);
+    CalculateMonStats(mon);
+
+    // Save the new stats.
+    BufferMonStatsToTaskData(mon, &sPartyMenuInternal->data[NUM_STATS]);
+
+    UpdateMonDisplayInfoAfterRareCandy(gPartyMenu.slotId, mon);
+
+    GetMonNickname(mon, gStringVar1);
+    ConvertIntToDecimalStringN(
+        gStringVar2,
+        levelCap,
+        STR_CONV_MODE_LEFT_ALIGN,
+        3
+    );
+    StringExpandPlaceholders(
+        gStringVar4,
+        gText_PkmnElevatedToLvVar2
+    );
+
+    PlayFanfareByFanfareNum(FANFARE_LEVEL_UP);
+    DisplayPartyMenuMessage(gStringVar4, TRUE);
+    ScheduleBgCopyTilemapToVram(2);
+
+    gTasks[taskId].func = Task_DisplayLevelUpStatsPg1;
 }
 
 static void CB2_ShowPokemonSummaryScreen(void)
