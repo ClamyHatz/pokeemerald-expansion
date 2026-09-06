@@ -16,6 +16,7 @@
 #include "link_rfu.h"
 #include "palette.h"
 #include "party_menu.h"
+#include "randomizer.h"
 #include "recorded_battle.h"
 #include "string_util.h"
 #include "sound.h"
@@ -78,8 +79,21 @@ void SetUpBattleVarsAndBirchZigzagoon(void)
 
     if (gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE)
     {
+        u16 species = SPECIES_ZIGZAGOON;
+
         ZeroEnemyPartyMons();
-        CreateMon(&gEnemyParty[0], SPECIES_ZIGZAGOON, 2, USE_RANDOM_IVS, 0, 0, OT_ID_PLAYER_ID, 0);
+
+        #if RANDOMIZER_AVAILABLE == TRUE
+        species = RandomizeFixedEncounterMon(
+            SPECIES_ZIGZAGOON,
+            MAP_NUM(ROUTE101),
+            MAP_GROUP(ROUTE101),
+            0
+        );
+        #endif
+
+        CreateMon(&gEnemyParty[0], species, 2, USE_RANDOM_IVS, 0, 0, OT_ID_PLAYER_ID, 0);
+
         i = 0;
         SetMonData(&gEnemyParty[0], MON_DATA_HELD_ITEM, &i);
     }
