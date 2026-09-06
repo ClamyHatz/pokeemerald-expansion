@@ -117,6 +117,14 @@ enum {
     MON_DATA_GIGANTAMAX_FACTOR,
     MON_DATA_TERA_TYPE,
     MON_DATA_EVOLUTION_TRACKER,
+    MON_DATA_CANT_RANDOMIZE_ABILITY,
+};
+
+enum {
+    MON_RANDOMIZER_NORMAL,
+    MON_RANDOMIZER_RANDOM_FORM,
+    MON_RANDOMIZER_SPECIAL_FORM,
+    MON_RANDOMIZER_INVALID
 };
 
 struct PokemonSubstruct0
@@ -207,7 +215,7 @@ struct PokemonSubstruct3
     u32 earthRibbon:1;    // Given to teams that have beaten Mt. Battle's 100-battle challenge in Colosseum/XD.
     u32 worldRibbon:1;    // Distributed during Pokémon Festa '04 and '05 to tournament winners.
     u32 isShadow:1;
-    u32 unused_0B:1;
+    u32 cantRandomizeAbility:1;
     u32 abilityNum:2;
 
     // The functionality of this bit changed in FRLG:
@@ -341,6 +349,7 @@ struct BattlePokemon
     /*0x55*/ u32 otId;
     /*0x59*/ u8 metLevel;
     /*0x5A*/ bool8 isShiny;
+    /*0x5B*/ u8 cantRandomizeAbility;
 };
 
 struct Evolution
@@ -450,7 +459,8 @@ struct SpeciesInfo /*0xC4*/
     u32 dexForceRequired:1; // This species will be taken into account for Pokédex ratings even if they have the "isMythical" flag set.
     u32 tmIlliterate:1;     // This species will be unable to learn the universal moves.
     u32 isFrontierBanned:1; // This species is not allowed to participate in Battle Frontier facilities.
-    u32 padding4:11;
+    u32 randomizerMode:2;   // Controls how the randomizer handles this species.
+    u32 padding4:9;
     // Shadow settings
     s8 enemyShadowXOffset; // This determines the X-offset for an enemy Pokémon's shadow during battle; negative values point left, positive values point right.
     s8 enemyShadowYOffset; // This determines the Y-offset for an enemy Pokémon's shadow during battle; negative values point up, positive values point down.
@@ -691,7 +701,7 @@ u8 CalculateEnemyPartyCount(void);
 u8 CalculateEnemyPartyCountInSide(u32 battler);
 u8 GetMonsStateToDoubles(void);
 u8 GetMonsStateToDoubles_2(void);
-u16 GetAbilityBySpecies(u16 species, u8 abilityNum);
+u16 GetAbilityBySpecies(u16 species, u8 abilityNum, u8 cantRandomizeAbility);
 u16 GetMonAbility(struct Pokemon *mon);
 void CreateSecretBaseEnemyParty(struct SecretBase *secretBaseRecord);
 u8 GetSecretBaseTrainerPicIndex(void);
