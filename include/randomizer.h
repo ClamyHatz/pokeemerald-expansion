@@ -53,6 +53,7 @@ enum RandomizerReason
     RANDOMIZER_REASON_SPECIES_TYPE,
     RANDOMIZER_REASON_LEARNSET,
     RANDOMIZER_REASON_FIELD_ITEM,
+    RANDOMIZER_REASON_GIFT_ITEM,
     RANDOMIZER_REASON_STARTER_AND_GIFT_MON,
     RANDOMIZER_REASON_EGG,
     RANDOMIZER_REASON_ABILITIES,
@@ -137,6 +138,9 @@ static inline bool32 GroupSetsIntersect(struct RandomizerGroupSet* originalCache
     return originalCache->maxGroup >= targetCache->minGroup
         && originalCache->minGroup <= targetCache->maxGroup;
 }
+
+u16 RandomizeGiftItem(u16 itemId, u16 amount, u8 mapNum, u8 mapGroup);
+void GiftItemRandomize_NativeCall(struct ScriptContext *ctx);
 
 #if RANDOMIZER_DYNAMIC_SPECIES == TRUE
 // Once the randomizer is set up, in RAM mode, you can call this to preload the tables.

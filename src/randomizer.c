@@ -276,7 +276,7 @@ u16 RandomizeFoundItem(u16 itemId, u8 mapNum, u8 mapGroup, u8 localId)
     u16 result;
     u32 mapSeed;
 
-    if (!ShouldRandomizeItem(itemId))
+    if (IsKeyItem(itemId) || itemId == ITEM_NONE)
         return itemId;
 
     // Seed the generator using the original item and the object event that led up
@@ -289,8 +289,14 @@ u16 RandomizeFoundItem(u16 itemId, u8 mapNum, u8 mapGroup, u8 localId)
 
     // Randomize TMs to TMs. Because HMs shouldn't be randomized, we can assume
     // this is a TM.
-    if (IsItemTMHM(itemId))
-        return RandomizerNextRange(&state, RANDOMIZER_MAX_TM - ITEM_TM01 + 1) + ITEM_TM01;
+    // Normal TM gifts stay within the TM pool.
+    if (IsItemTMHM(itemId) && !IsItemHM(itemId))
+    {
+        return RandomizerNextRange(
+            &state,
+            RANDOMIZER_MAX_TM - ITEM_TM01 + 1
+        ) + ITEM_TM01;
+    }
 
     // Randomize everything else to everything else.
     do {
@@ -299,6 +305,60 @@ u16 RandomizeFoundItem(u16 itemId, u8 mapNum, u8 mapGroup, u8 localId)
 
     return result;
 
+}
+
+u16 RandomizeGiftItem(u16 itemId, u16 amount, u8 mapNum, u8 mapGroup)
+{
+    struct Sfc32State state;
+    u16 result;
+    u32 mapSeed;
+
+    if (!ShouldRandomizeItem(itemId))
+        return itemId;
+
+    // Stable identity for this scripted gift.
+    // Same save + map + original item + quantity = same replacement.
+    mapSeed = ((u32)mapGroup << 24)
+            | ((u32)mapNum << 16)
+            | amount;
+
+    state = RandomizerRandSeed(
+        RANDOMIZER_REASON_GIFT_ITEM,
+        mapSeed,
+        itemId);
+
+    // Gift TMs remain TMs.
+    if (IsItemTMHM(itemId))
+        return RandomizerNextRange(
+            &state,
+            RANDOMIZER_MAX_TM - ITEM_TM01 + 1
+        ) + ITEM_TM01;
+
+    // Everything else comes from the normal safe item pool.
+    do
+    {
+        result =
+            sRandomizerItemWhitelist[
+                RandomizerNextRange(&state, ITEM_WHITELIST_SIZE)
+            ];
+    }
+    while (!ShouldRandomizeItem(result) || IsItemTMHM(result));
+
+    return result;
+}
+
+void GiftItemRandomize_NativeCall(struct ScriptContext *ctx)
+{
+    if (!RandomizerFeatureEnabled(RANDOMIZE_FIELD_ITEMS))
+        return;
+
+    gSpecialVar_0x8000 =
+        RandomizeGiftItem(
+            gSpecialVar_0x8000,
+            gSpecialVar_0x8001,
+            gSaveBlock1Ptr->location.mapNum,
+            gSaveBlock1Ptr->location.mapGroup
+        );
 }
 
 // Takes a SpecialVar as an argument to simplify handling separate scripts.
@@ -1208,6 +1268,19 @@ const struct LevelUpMove *RandomizeSpeciesLearnset(u16 species)
     return cache->moves;
 }
 
+static u16 GetRandomizerEvolutionRoot(u16 species)
+{
+    u16 previous;
+
+    while ((previous = GetSpeciesPreEvolution(species)) != SPECIES_NONE
+        && previous != species)
+    {
+        species = previous;
+    }
+
+    return species;
+}
+
 // Given a species and an abilityNum, returns a replacement for that ability.
 u16 RandomizeAbility(u16 species, u8 abilityNum, u16 originalAbility)
 {
@@ -1220,11 +1293,17 @@ u16 RandomizeAbility(u16 species, u8 abilityNum, u16 originalAbility)
         u16 result;
         u32 seed;
 
-        // Seed the generator using the species and the abilityNum 
-        seed = ((u32)species) << 8;
+        u16 abilitySpecies = GetRandomizerEvolutionRoot(species);
+
+        // Seed by evolutionary family + ability slot.
+        // Evolutions therefore preserve their randomized ability.
+        seed = ((u32)abilitySpecies) << 8;
         seed |= abilityNum;
 
-        state = RandomizerRandSeed(RANDOMIZER_REASON_ABILITIES, seed, species);
+        state = RandomizerRandSeed(
+            RANDOMIZER_REASON_ABILITIES,
+            seed,
+            abilitySpecies);
 
         // Randomize abilities
         do

@@ -127,7 +127,7 @@ setvar VAR_LITTLEROOT_INTRO_STATE, 7
 setvar VAR_LITTLEROOT_TOWN_STATE, 2
 @ Move the twin away from the Route 101 entrance.
 setobjectxyperm LOCALID_TWIN, 10, 1
-giveitem ITEM_RARE_CANDY, 99
+additem ITEM_RARE_CANDY, 99
 setobjectmovementtype LOCALID_TWIN, MOVEMENT_TYPE_FACE_UP
 clearflag FLAG_HIDE_LITTLEROOT_TOWN_FAT_MAN
 clearflag FLAG_HIDE_MAP_NAME_POPUP
@@ -148,7 +148,7 @@ setvar VAR_LITTLEROOT_INTRO_STATE, 7
 setvar VAR_LITTLEROOT_TOWN_STATE, 2
 @ Move the twin away from the Route 101 entrance.
 setobjectxyperm LOCALID_TWIN, 10, 1
-giveitem ITEM_RARE_CANDY, 99
+additem ITEM_RARE_CANDY, 99
 setobjectmovementtype LOCALID_TWIN, MOVEMENT_TYPE_FACE_UP
 clearflag FLAG_HIDE_LITTLEROOT_TOWN_FAT_MAN
 clearflag FLAG_HIDE_MAP_NAME_POPUP
