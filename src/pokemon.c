@@ -3503,7 +3503,8 @@ u16 GetAbilityBySpecies(u16 species, u8 abilityNum, u8 cantRandomizeAbility)
         if (gLastUsedAbility != ABILITY_NONE
          && species != SPECIES_SHEDINJA)
         {
-            gLastUsedAbility = RandomizeAbility(species, abilityNum, gLastUsedAbility);
+            gLastUsedAbility =
+                RandomizeAbility(species, abilityNum, gLastUsedAbility);
         }
     #endif
 
@@ -3624,10 +3625,17 @@ u16 GetSpeciesWeight(u16 species)
 
 const struct LevelUpMove *GetSpeciesLevelUpLearnset(u16 species)
 {
-    const struct LevelUpMove *learnset = gSpeciesInfo[SanitizeSpeciesId(species)].levelUpLearnset;
+#if RANDOMIZER_AVAILABLE == TRUE
+    return RandomizeSpeciesLearnset(species);
+#else
+    const struct LevelUpMove *learnset =
+        gSpeciesInfo[SanitizeSpeciesId(species)].levelUpLearnset;
+
     if (learnset == NULL)
         return gSpeciesInfo[SPECIES_NONE].levelUpLearnset;
+
     return learnset;
+#endif
 }
 
 const u16 *GetSpeciesTeachableLearnset(u16 species)

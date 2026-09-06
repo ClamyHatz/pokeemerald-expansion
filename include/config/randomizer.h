@@ -42,6 +42,7 @@
 #define FORCE_RANDOMIZE_STARTER_AND_GIFT_MON      TRUE
 #define FORCE_RANDOMIZE_EGG_MON                   TRUE
 #define FORCE_RANDOMIZE_ABILITIES                 TRUE
+#define FORCE_RANDOMIZE_LEARNSET                 TRUE
 
 // These flags control whether a particular randomization feature is active.
 // They are ignored and disabled if the flags above are set.
@@ -78,6 +79,10 @@
 #if RANDOMIZER_SEED_IS_TRAINER_ID == FALSE
 #define RANDOMIZER_VAR_SEED_L                         VAR_UNUSED_0x40FA
 #define RANDOMIZER_VAR_SEED_H                         VAR_UNUSED_0x40FB
+#endif
+
+#ifndef FORCE_RANDOMIZE_LEARNSET
+#define RANDOMIZER_FLAG_LEARNSET                 FLAG_UNUSED_0x027
 #endif
 
 #endif // RANDOMIZER_AVAILABLE

@@ -13,6 +13,9 @@
 #include "constants/abilities.h"
 #include "data/randomizer/ability_whitelist.h"
 #include "constants/abilities.h"
+#include "move.h"
+#include "constants/moves.h"
+#include "constants/pokemon.h"
 
 // Add the mons you wish to be randomized when given as starter/gift mon to this list
 const u16 gStarterAndGiftMonTable[STARTER_AND_GIFT_MON_COUNT] =
@@ -97,6 +100,12 @@ bool32 RandomizerFeatureEnabled(enum RandomizerFeature feature)
                 return FORCE_RANDOMIZE_ABILITIES;
             #else
                 return FlagGet(RANDOMIZER_FLAG_ABILITIES);
+            #endif
+        case RANDOMIZE_LEARNSET:
+            #ifdef FORCE_RANDOMIZE_LEARNSET
+                return FORCE_RANDOMIZE_LEARNSET;
+            #else
+                return FlagGet(RANDOMIZER_FLAG_LEARNSET);
             #endif
         default:
             return FALSE;
@@ -961,6 +970,242 @@ static inline bool32 IsAbilityIllegal(u16 ability)
     if (ability == ABILITY_NONE || ability == ABILITY_WONDER_GUARD)
         return TRUE;
     return FALSE;
+}
+
+#define RANDOMIZER_LEARNSET_COUNT 21
+#define RANDOMIZER_LEARNSET_CACHE_SIZE 4
+
+enum RandomLearnsetMoveKind
+{
+    RANDOM_MOVE_STAB_DAMAGE,
+    RANDOM_MOVE_STATUS,
+    RANDOM_MOVE_NONSTAB_DAMAGE,
+};
+
+struct RandomLearnsetCache
+{
+    u16 species;
+    u32 seed;
+    struct LevelUpMove moves[RANDOMIZER_LEARNSET_COUNT + 1];
+};
+
+EWRAM_DATA static struct RandomLearnsetCache
+    sRandomLearnsetCache[RANDOMIZER_LEARNSET_CACHE_SIZE] = {0};
+
+EWRAM_DATA static u8 sRandomLearnsetCacheNext = 0;
+
+static const u8 sRandomLearnsetLevels[RANDOMIZER_LEARNSET_COUNT] =
+{
+     1,  4,  7,
+    10, 13, 16,
+    19, 22, 25,
+    28, 31, 34,
+    37, 40, 43,
+    46, 49, 52,
+    55, 58, 61,
+};
+
+static bool32 IsRandomizerMoveUsable(u16 move)
+{
+    if (move == MOVE_NONE
+     || move == MOVE_STRUGGLE
+     || move == MOVE_SKETCH)
+        return FALSE;
+
+    // Don't directly give Z-Moves or Max/G-Max moves as learnset moves.
+    if (move >= FIRST_Z_MOVE)
+        return FALSE;
+
+    // Skip placeholder / unfinished moves.
+    if (GetMoveEffect(move) == EFFECT_PLACEHOLDER)
+        return FALSE;
+
+    return TRUE;
+}
+
+static bool32 MoveMatchesRandomLearnsetKind(
+    u16 species,
+    u16 move,
+    enum RandomLearnsetMoveKind kind)
+{
+    const u8 type1 = gSpeciesInfo[species].types[0];
+    const u8 type2 = gSpeciesInfo[species].types[1];
+    const u8 moveType = GetMoveType(move);
+    const u8 category = GetMoveCategory(move);
+
+    const bool32 isStab = (moveType == type1 || moveType == type2);
+    const bool32 isStatus = (category == DAMAGE_CATEGORY_STATUS);
+    const bool32 isDamaging = !isStatus && GetMovePower(move) > 0;
+
+    switch (kind)
+    {
+    case RANDOM_MOVE_STAB_DAMAGE:
+        return isDamaging && isStab;
+
+    case RANDOM_MOVE_STATUS:
+        return isStatus;
+
+    case RANDOM_MOVE_NONSTAB_DAMAGE:
+        return isDamaging && !isStab;
+    }
+
+    return FALSE;
+}
+
+static bool32 MoveAlreadyChosen(
+    const struct LevelUpMove *learnset,
+    u32 count,
+    u16 move)
+{
+    u32 i;
+
+    for (i = 0; i < count; i++)
+    {
+        if (learnset[i].move == move)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+static u16 PickRandomLearnsetMove(
+    struct Sfc32State *state,
+    u16 species,
+    enum RandomLearnsetMoveKind kind,
+    const struct LevelUpMove *learnset,
+    u32 chosenCount)
+{
+    u32 attempts;
+
+    // Random probing is cheap here and avoids needing huge move-pool arrays.
+    for (attempts = 0; attempts < 4096; attempts++)
+    {
+        const u16 move =
+            (u16)(RandomizerNextRange(state, FIRST_Z_MOVE - MOVE_POUND)
+                + MOVE_POUND);
+
+        if (!IsRandomizerMoveUsable(move))
+            continue;
+
+        if (!MoveMatchesRandomLearnsetKind(species, move, kind))
+            continue;
+
+        if (MoveAlreadyChosen(learnset, chosenCount, move))
+            continue;
+
+        return move;
+    }
+
+    // Fallback scan, in case random probing somehow fails.
+    {
+        u16 move;
+
+        for (move = MOVE_POUND; move < FIRST_Z_MOVE; move++)
+        {
+            if (!IsRandomizerMoveUsable(move))
+                continue;
+
+            if (!MoveMatchesRandomLearnsetKind(species, move, kind))
+                continue;
+
+            if (MoveAlreadyChosen(learnset, chosenCount, move))
+                continue;
+
+            return move;
+        }
+    }
+
+    // Extremely defensive fallback.
+    return MOVE_TACKLE;
+}
+
+static void BuildRandomSpeciesLearnset(
+    struct RandomLearnsetCache *cache,
+    u16 species)
+{
+    struct Sfc32State state;
+    u32 i;
+
+    cache->species = species;
+    cache->seed = GetRandomizerSeed();
+
+    state = RandomizerRandSeed(
+        RANDOMIZER_REASON_LEARNSET,
+        species,
+        0x4C454152); // "LEAR", just extra seed separation
+
+    for (i = 0; i < RANDOMIZER_LEARNSET_COUNT; i++)
+    {
+        enum RandomLearnsetMoveKind kind;
+
+        // Interleave:
+        // STAB, Status, Non-STAB, STAB, Status, Non-STAB...
+        switch (i % 3)
+        {
+        case 0:
+            kind = RANDOM_MOVE_STAB_DAMAGE;
+            break;
+        case 1:
+            kind = RANDOM_MOVE_STATUS;
+            break;
+        default:
+            kind = RANDOM_MOVE_NONSTAB_DAMAGE;
+            break;
+        }
+
+        cache->moves[i].move =
+            PickRandomLearnsetMove(
+                &state,
+                species,
+                kind,
+                cache->moves,
+                i);
+
+        cache->moves[i].level = sRandomLearnsetLevels[i];
+    }
+
+    cache->moves[RANDOMIZER_LEARNSET_COUNT].move = LEVEL_UP_MOVE_END;
+    cache->moves[RANDOMIZER_LEARNSET_COUNT].level = 0;
+}
+
+const struct LevelUpMove *RandomizeSpeciesLearnset(u16 species)
+{
+    u32 i;
+    struct RandomLearnsetCache *cache;
+
+    species = SanitizeSpeciesId(species);
+
+    if (!RandomizerFeatureEnabled(RANDOMIZE_LEARNSET)
+     || species == SPECIES_NONE)
+    {
+        const struct LevelUpMove *learnset =
+            gSpeciesInfo[species].levelUpLearnset;
+
+        if (learnset == NULL)
+            return gSpeciesInfo[SPECIES_NONE].levelUpLearnset;
+
+        return learnset;
+    }
+
+    // Look for a valid cached version first.
+    for (i = 0; i < RANDOMIZER_LEARNSET_CACHE_SIZE; i++)
+    {
+        if (sRandomLearnsetCache[i].species == species
+         && sRandomLearnsetCache[i].seed == GetRandomizerSeed())
+        {
+            return sRandomLearnsetCache[i].moves;
+        }
+    }
+
+    cache = &sRandomLearnsetCache[sRandomLearnsetCacheNext];
+
+    sRandomLearnsetCacheNext++;
+    if (sRandomLearnsetCacheNext >= RANDOMIZER_LEARNSET_CACHE_SIZE)
+        sRandomLearnsetCacheNext = 0;
+
+    BuildRandomSpeciesLearnset(cache, species);
+
+    return cache->moves;
 }
 
 // Given a species and an abilityNum, returns a replacement for that ability.

@@ -82,6 +82,7 @@ struct RandomizerGroupSet {
     u16 maxGroup;
 };
 
+struct LevelUpMove;
 
 u32 GetRandomizerSeed(void);
 bool32 RandomizerFeatureEnabled(enum RandomizerFeature feature);
@@ -128,6 +129,8 @@ u16 RandomizeEggMon(u16 originalSlot, const u16* originalEggMons);
 
 // Given a species and an abilityNum, returns a replacement for that ability.
 u16 RandomizeAbility(u16 species, u8 abilityNum, u16 originalAbility);
+
+const struct LevelUpMove *RandomizeSpeciesLearnset(u16 species);
 
 static inline bool32 GroupSetsIntersect(struct RandomizerGroupSet* originalCache, struct RandomizerGroupSet* targetCache)
 {
