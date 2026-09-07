@@ -7,7 +7,7 @@
 static const u16 sRandomizerItemWhitelist[] =
 {
     // Poké Balls
-    ITEM_POKE_BALL,
+    """ITEM_POKE_BALL,
     ITEM_GREAT_BALL,
     ITEM_ULTRA_BALL,
     ITEM_MASTER_BALL,
@@ -29,13 +29,13 @@ static const u16 sRandomizerItemWhitelist[] =
     ITEM_FAST_BALL,
     ITEM_HEAVY_BALL,
     ITEM_DREAM_BALL,
-    ITEM_SAFARI_BALL,
+    ITEM_SAFARI_BALL,"""
     //ITEM_SPORT_BALL,
     //ITEM_PARK_BALL,
-    ITEM_BEAST_BALL,
+    """ITEM_BEAST_BALL,
     ITEM_CHERISH_BALL,
     ITEM_MAX_HONEY,
-    ITEM_BIG_MALASADA,
+    ITEM_BIG_MALASADA,"""
     // Vitamins
     ITEM_HP_UP,
     ITEM_PROTEIN,
@@ -79,8 +79,8 @@ static const u16 sRandomizerItemWhitelist[] =
     //ITEM_EXP_CANDY_XL,
     //ITEM_DYNAMAX_CANDY,
     // Encounter-modifying Flutes
-    ITEM_BLACK_FLUTE,
-    ITEM_WHITE_FLUTE,
+    """ITEM_BLACK_FLUTE,
+    ITEM_WHITE_FLUTE,"""
     //ITEM_LURE,
     //ITEM_SUPER_LURE,
     //ITEM_MAX_LURE,
@@ -92,10 +92,10 @@ static const u16 sRandomizerItemWhitelist[] =
     // Treasures
     //ITEM_BOTTLE_CAP,
     //ITEM_GOLD_BOTTLE_CAP,
-    ITEM_HEART_SCALE,
+    """ITEM_HEART_SCALE,
     ITEM_HONEY,
     ITEM_RARE_BONE,
-    ITEM_ODD_KEYSTONE,
+    ITEM_ODD_KEYSTONE,"""
     //ITEM_RELIC_COPPER,
     //ITEM_RELIC_SILVER,
     //ITEM_RELIC_GOLD,
@@ -103,7 +103,7 @@ static const u16 sRandomizerItemWhitelist[] =
     //ITEM_RELIC_BAND,
     //ITEM_RELIC_STATUE,
     //ITEM_RELIC_CROWN,
-    ITEM_STRANGE_SOUVENIR,
+    //ITEM_STRANGE_SOUVENIR,
     // Fossils
     //ITEM_HELIX_FOSSIL,
     //ITEM_DOME_FOSSIL,
@@ -189,12 +189,12 @@ static const u16 sRandomizerItemWhitelist[] =
     ITEM_RIBBON_SWEET,
     ITEM_EVERSTONE,
     // Nectars
-    ITEM_RED_NECTAR,
-    ITEM_YELLOW_NECTAR,
-    ITEM_PINK_NECTAR,
-    ITEM_PURPLE_NECTAR,
+    //ITEM_RED_NECTAR,
+    //ITEM_YELLOW_NECTAR,
+    //ITEM_PINK_NECTAR,
+    //ITEM_PURPLE_NECTAR,
     // Plates
-    ITEM_FLAME_PLATE,
+    """ITEM_FLAME_PLATE,
     ITEM_SPLASH_PLATE,
     ITEM_ZAP_PLATE,
     ITEM_MEADOW_PLATE,
@@ -305,7 +305,7 @@ static const u16 sRandomizerItemWhitelist[] =
     ITEM_DRAGON_GEM,
     ITEM_DARK_GEM,
     ITEM_STEEL_GEM,
-    ITEM_FAIRY_GEM,
+    ITEM_FAIRY_GEM,"""
     // Z-Crystals
     //ITEM_NORMALIUM_Z,
     //ITEM_FIRIUM_Z,
@@ -367,13 +367,13 @@ static const u16 sRandomizerItemWhitelist[] =
     ITEM_PURE_INCENSE,
     // Contest Scarves
     // EV Gain Modifiers
-    ITEM_MACHO_BRACE,
+    "ITEM_MACHO_BRACE,
     ITEM_POWER_WEIGHT,
     ITEM_POWER_BRACER,
     ITEM_POWER_BELT,
     ITEM_POWER_LENS,
     ITEM_POWER_BAND,
-    ITEM_POWER_ANKLET,
+    ITEM_POWER_ANKLET,"
     // Type-boosting Held Items
     ITEM_SILK_SCARF,
     ITEM_CHARCOAL,
@@ -553,8 +553,8 @@ static const u16 sRandomizerItemWhitelist[] =
     ITEM_MIRROR_HERB,
     //ITEM_SCROLL_OF_DARKNESS,
     //ITEM_SCROLL_OF_WATERS,
-    ITEM_TERA_ORB,
-    ITEM_TINY_BAMBOO_SHOOT,
+    //ITEM_TERA_ORB,
+    //ITEM_TINY_BAMBOO_SHOOT,
 };
 
 #define ITEM_WHITELIST_SIZE     (NELEMS(sRandomizerItemWhitelist))
