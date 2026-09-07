@@ -845,6 +845,24 @@ void ChooseStarter(void)
     gMain.savedCallback = CB2_GiveStarter;
 }
 
+static void SetStarterIVs(struct Pokemon *mon)
+{
+    u8 imperfectStat = Random() % NUM_STATS;
+    u8 imperfectIV = Random() % 31; // 0-30
+    u8 perfectIV = MAX_PER_STAT_IVS;
+    u8 i;
+
+    for (i = 0; i < NUM_STATS; i++)
+    {
+        if (i == imperfectStat)
+            SetMonData(mon, MON_DATA_HP_IV + i, &imperfectIV);
+        else
+            SetMonData(mon, MON_DATA_HP_IV + i, &perfectIV);
+    }
+
+    CalculateMonStats(mon);
+}
+
 static void CB2_GiveStarter(void)
 {
     u16 starterMon;
@@ -852,6 +870,7 @@ static void CB2_GiveStarter(void)
     *GetVarPointer(VAR_STARTER_MON) = gSpecialVar_Result;
     starterMon = GetStarterPokemon(gSpecialVar_Result);
     ScriptGiveMon(starterMon, 5, ITEM_NONE);
+    SetStarterIVs(&gPlayerParty[0]);
     ResetTasks();
     PlayBattleBGM();
     SetMainCallback2(CB2_StartFirstBattle);
