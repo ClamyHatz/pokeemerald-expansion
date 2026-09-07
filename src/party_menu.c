@@ -79,6 +79,7 @@
 enum {
     MENU_SUMMARY,
     MENU_LEVEL_TO_CAP,
+    MENU_EVOLVE,
     MENU_SWITCH,
     MENU_CANCEL1,
     MENU_ITEM,
@@ -485,6 +486,7 @@ static void BlitBitmapToPartyWindow_LeftColumn(u8, u8, u8, u8, u8, bool8);
 static void BlitBitmapToPartyWindow_RightColumn(u8, u8, u8, u8, u8, bool8);
 static void CursorCb_Summary(u8);
 static void CursorCb_LevelToCap(u8);
+static void CursorCb_Evolve(u8);
 static void CursorCb_Switch(u8);
 static void CursorCb_Cancel1(u8);
 static void CursorCb_Item(u8);
@@ -2212,6 +2214,33 @@ static bool16 IsMonAllowedInPokemonJump(struct Pokemon *mon)
     return FALSE;
 }
 
+static void CursorCb_Evolve(u8 taskId)
+{
+    struct Pokemon *mon = &gPlayerParty[gPartyMenu.slotId];
+    u16 targetSpecies;
+
+    PlaySE(SE_SELECT);
+
+    targetSpecies = GetPartyMenuEvolutionTarget(mon);
+
+    if (targetSpecies == SPECIES_NONE)
+    {
+        Task_ReturnToChooseMonAfterText(taskId);
+        return;
+    }
+
+    FreePartyPointers();
+    gCB2_AfterEvolution = gPartyMenu.exitCallback;
+
+    BeginEvolutionScene(
+        mon,
+        targetSpecies,
+        TRUE,
+        gPartyMenu.slotId
+    );
+
+    DestroyTask(taskId);
+}
 
 static bool16 IsMonAllowedInDodrioBerryPicking(struct Pokemon *mon)
 {
@@ -2874,10 +2903,33 @@ static void SetPartyMonSelectionActions(struct Pokemon *mons, u8 slotId, u8 acti
 static void SetPartyMonFieldSelectionActions(struct Pokemon *mons, u8 slotId)
 {
     u8 i, j;
+    struct Pokemon *mon = &mons[slotId];
 
     sPartyMenuInternal->numActions = 0;
-    AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, MENU_SUMMARY);
-    AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, MENU_LEVEL_TO_CAP);
+
+    AppendToList(
+        sPartyMenuInternal->actions,
+        &sPartyMenuInternal->numActions,
+        MENU_SUMMARY
+    );
+
+    if (GetMonData(mon, MON_DATA_LEVEL) < GetCurrentLevelCap())
+    {
+        AppendToList(
+            sPartyMenuInternal->actions,
+            &sPartyMenuInternal->numActions,
+            MENU_LEVEL_TO_CAP
+        );
+    }
+
+    if (CanPartyMenuEvolve(mon))
+    {
+        AppendToList(
+            sPartyMenuInternal->actions,
+            &sPartyMenuInternal->numActions,
+            MENU_EVOLVE
+        );
+    }
 
     // Add field moves to action list
     for (i = 0; i < MAX_MON_MOVES; i++)

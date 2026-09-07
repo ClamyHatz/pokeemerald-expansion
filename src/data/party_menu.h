@@ -698,6 +698,7 @@ struct
 {
     [MENU_SUMMARY] = {COMPOUND_STRING("SUMMARY"), CursorCb_Summary},
     [MENU_LEVEL_TO_CAP] = {COMPOUND_STRING("LEVEL TO CAP"), CursorCb_LevelToCap},
+    [MENU_EVOLVE] = {COMPOUND_STRING("EVOLVE"), CursorCb_Evolve},
     [MENU_SWITCH] = {COMPOUND_STRING("SWITCH"), CursorCb_Switch},
     [MENU_CANCEL1] = {gText_Cancel2, CursorCb_Cancel1},
     [MENU_ITEM] = {COMPOUND_STRING("ITEM"), CursorCb_Item},

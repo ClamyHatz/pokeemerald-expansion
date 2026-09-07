@@ -653,6 +653,10 @@ void ConvertPokemonToBattleTowerPokemon(struct Pokemon *mon, struct BattleTowerP
 bool8 ShouldIgnoreDeoxysForm(u8 caseId, u8 battlerId);
 u16 GetUnionRoomTrainerPic(void);
 u16 GetUnionRoomTrainerClass(void);
+bool32 CanPartyMenuEvolve(struct Pokemon *mon);
+u16 GetPartyMenuEvolutionTarget(struct Pokemon *mon);
+bool32 CanPartyMenuEvolve(struct Pokemon *mon);
+u16 GetPartyMenuEvolutionTarget(struct Pokemon *mon);
 void CreateEnemyEventMon(void);
 void CalculateMonStats(struct Pokemon *mon);
 void BoxMonToMon(const struct BoxPokemon *src, struct Pokemon *dest);

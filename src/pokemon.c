@@ -5588,6 +5588,146 @@ u8 CanLearnTeachableMove(u16 species, u16 move)
     return TRUE;
 }
 
+static bool32 IsDirectItemEvolutionMethod(u16 method)
+{
+    switch (method)
+    {
+    case EVO_ITEM:
+    case EVO_ITEM_MALE:
+    case EVO_ITEM_FEMALE:
+    case EVO_ITEM_DAY:
+    case EVO_ITEM_NIGHT:
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
+static bool32 IsPartyMenuEvolutionEntryEligible(struct Pokemon *mon, const struct Evolution *evo)
+{
+    u32 level = GetMonData(mon, MON_DATA_LEVEL);
+    u32 gender = GetMonGender(mon);
+
+    if (SanitizeSpeciesId(evo->targetSpecies) == SPECIES_NONE)
+        return FALSE;
+
+    // Direct-use item / stone evolutions stay item-based.
+    if (IsDirectItemEvolutionMethod(evo->method))
+        return FALSE;
+
+    switch (evo->method)
+    {
+    case EVO_NONE:
+        return FALSE;
+
+    // Keep the level requirement, ignore the additional gimmick.
+    case EVO_LEVEL:
+    case EVO_LEVEL_ATK_GT_DEF:
+    case EVO_LEVEL_ATK_EQ_DEF:
+    case EVO_LEVEL_ATK_LT_DEF:
+    case EVO_LEVEL_SILCOON:
+    case EVO_LEVEL_CASCOON:
+    case EVO_LEVEL_NINJASK:
+    case EVO_LEVEL_SHEDINJA:
+    case EVO_LEVEL_NIGHT:
+    case EVO_LEVEL_DAY:
+    case EVO_LEVEL_DUSK:
+    case EVO_LEVEL_RAIN:
+    case EVO_LEVEL_FOG:
+    case EVO_LEVEL_DARK_TYPE_MON_IN_PARTY:
+    case EVO_LEVEL_NATURE_AMPED:
+    case EVO_LEVEL_NATURE_LOW_KEY:
+    case EVO_LEVEL_FAMILY_OF_THREE:
+    case EVO_LEVEL_FAMILY_OF_FOUR:
+        return level >= evo->param;
+
+    // Keep both level and gender.
+    case EVO_LEVEL_MALE:
+        return level >= evo->param && gender == MON_MALE;
+
+    case EVO_LEVEL_FEMALE:
+        return level >= evo->param && gender == MON_FEMALE;
+
+    // Keep gender, ignore recoil requirement.
+    case EVO_RECOIL_DAMAGE_MALE:
+        return gender == MON_MALE;
+
+    case EVO_RECOIL_DAMAGE_FEMALE:
+        return gender == MON_FEMALE;
+
+    // Trade, friendship, locations, scrolls, moves,
+    // held-item leveling, walking, special battle conditions, etc.
+    default:
+        return TRUE;
+    }
+}
+
+bool32 CanPartyMenuEvolve(struct Pokemon *mon)
+{
+    u16 species;
+    const struct Evolution *evolutions;
+    u32 i;
+
+    if (GetMonData(mon, MON_DATA_IS_EGG))
+        return FALSE;
+
+    species = GetMonData(mon, MON_DATA_SPECIES);
+    evolutions = GetSpeciesEvolutions(species);
+
+    if (evolutions == NULL)
+        return FALSE;
+
+    for (i = 0; evolutions[i].method != EVOLUTIONS_END; i++)
+    {
+        if (IsPartyMenuEvolutionEntryEligible(mon, &evolutions[i]))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+u16 GetPartyMenuEvolutionTarget(struct Pokemon *mon)
+{
+    u16 species;
+    const struct Evolution *evolutions;
+    u16 candidates[16];
+    u32 candidateCount = 0;
+    u32 i, j;
+
+    if (!CanPartyMenuEvolve(mon))
+        return SPECIES_NONE;
+
+    species = GetMonData(mon, MON_DATA_SPECIES);
+    evolutions = GetSpeciesEvolutions(species);
+
+    for (i = 0; evolutions[i].method != EVOLUTIONS_END; i++)
+    {
+        bool32 duplicate = FALSE;
+
+        if (!IsPartyMenuEvolutionEntryEligible(mon, &evolutions[i]))
+            continue;
+
+        // A target may have multiple evolution methods.
+        // Give each distinct target only one entry in the random pool.
+        for (j = 0; j < candidateCount; j++)
+        {
+            if (candidates[j] == evolutions[i].targetSpecies)
+            {
+                duplicate = TRUE;
+                break;
+            }
+        }
+
+        if (!duplicate && candidateCount < ARRAY_COUNT(candidates))
+            candidates[candidateCount++] = evolutions[i].targetSpecies;
+    }
+
+    if (candidateCount == 0)
+        return SPECIES_NONE;
+
+    return candidates[Random() % candidateCount];
+}
+
 u8 GetMoveRelearnerMoves(struct Pokemon *mon, u16 *moves)
 {
     u16 learnedMoves[4];
