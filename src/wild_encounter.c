@@ -23,6 +23,7 @@
 #include "constants/items.h"
 #include "constants/layouts.h"
 #include "constants/weather.h"
+#include "caps.h"
 #include "randomizer.h"
 
 extern const u8 EventScript_SprayWoreOff[];
@@ -414,6 +415,12 @@ u8 PickWildMonNature(void)
 void CreateWildMon(u16 species, u8 level)
 {
     bool32 checkCuteCharm = TRUE;
+    u32 levelCap = GetCurrentLevelCap();
+
+    if (levelCap > 1)
+        level = min(level + 3, levelCap - 1);
+    else
+        level = min(level + 3, MAX_LEVEL);
 
     ZeroEnemyPartyMons();
 

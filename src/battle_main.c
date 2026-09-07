@@ -17,6 +17,7 @@
 #include "battle_gimmick.h"
 #include "berry.h"
 #include "bg.h"
+#include "caps.h"
 #include "data.h"
 #include "debug.h"
 #include "decompress.h"
@@ -1892,6 +1893,33 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
             u32 fixedOtId = 0;
             u32 ability = 0;
             u16 species = partyData[monIndex].species;
+            u8 level = partyData[monIndex].lvl;
+            u32 levelCap = GetCurrentLevelCap();
+
+            bool32 isFirstRival =
+                seed == TRAINER_MAY_ROUTE_103_TREECKO
+             || seed == TRAINER_MAY_ROUTE_103_TORCHIC
+             || seed == TRAINER_MAY_ROUTE_103_MUDKIP
+             || seed == TRAINER_BRENDAN_ROUTE_103_TREECKO
+             || seed == TRAINER_BRENDAN_ROUTE_103_TORCHIC
+             || seed == TRAINER_BRENDAN_ROUTE_103_MUDKIP;
+
+            if (isFirstRival)
+            {
+                // First rival should be level 9.
+                level = 9;
+            }
+            else if (trainer->trainerClass == TRAINER_CLASS_LEADER)
+            {
+                if (i == monsCount - 1)
+                    level = min(levelCap + 1, MAX_LEVEL);
+                else
+                    level = min(level + 3, levelCap);
+            }
+            else
+            {
+                level = min(level + 6, levelCap);
+            }
 
             #if (RANDOMIZER_AVAILABLE)
                 if(!isTrainerBossTrainer)
@@ -1919,7 +1947,7 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
                 fixedOtId = HIHALF(personalityValue) ^ LOHALF(personalityValue);
             }
 
-            CreateMon(&party[i], species, partyData[monIndex].lvl, 0, TRUE, personalityValue, otIdType, fixedOtId);
+            CreateMon(&party[i], species, level, 0, TRUE, personalityValue, otIdType, fixedOtId);
             SetMonData(&party[i], MON_DATA_HELD_ITEM, &partyData[monIndex].heldItem);
 
             CustomTrainerPartyAssignMoves(&party[i], &partyData[monIndex]);
