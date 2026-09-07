@@ -131,9 +131,21 @@ for map_path in glob.glob("data/maps/*/map.json"):
         print(o["flag"], map_path, f"({x},{y})", " ".join(vals))
 
 '''
+
+BERRY_PATCH_BLOCKS = {
+    0x3113,
+    0x3114,
+    0x3115,
+    0x327B,
+    0x327D,
+    0x328C,
+    0x328E,
+}
+
 import glob
 import json
 import struct
+import os
 
 with open("data/layouts/layouts.json") as f:
     layout_data = json.load(f)
@@ -180,23 +192,28 @@ for map_path in glob.glob("data/maps/*/map.json"):
         x = obj["x"]
         y = obj["y"]
 
-    original = get_block(x, y)
+        original = get_block(x, y)
 
-    if original == 0x1170:
-        print(
-            f'{obj["flag"]}: {map_path} ({x},{y}) '
-            f'0x{original:04X} unchanged'
-        )
-        continue
+        if original != 0x1170:
+            replacement = (original & 0xF000) | 0x0001
+            set_block(x, y, replacement)
 
-    replacement = (original & 0xF000) | 0x0001
+        for dy in range(0, 2):
+            for dx in range(-2, 3):
+                nx = x + dx
+                ny = y + dy
 
-    print(
-        f'{obj["flag"]}: {map_path} ({x},{y}) '
-        f'0x{original:04X} -> 0x{replacement:04X}'
-    )
+                if nx < 0 or ny < 0 or nx >= width or ny >= height:
+                    continue
 
-    set_block(x, y, replacement)
+                value = get_block(nx, ny)
 
-    #with open(block_path, "wb") as f:
-     #   f.write(blocks)
+                if value in BERRY_PATCH_BLOCKS:
+                    replacement = (value & 0xF000) | 0x0001
+                    set_block(nx, ny, replacement)
+
+    with open(block_path, "wb") as f:
+        f.write(blocks)
+
+    os.utime(map_path, None)
+
