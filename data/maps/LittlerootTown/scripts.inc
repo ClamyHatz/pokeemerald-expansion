@@ -136,26 +136,26 @@ releaseall
 end
 
 LittlerootTown_EventScript_StepOffTruckFemale::
-lockall
-delay 15
-playse SE_LEDGE
-applymovement LOCALID_PLAYER, LittlerootTown_Movement_PlayerStepOffTruck
-waitmovement 0
-setflag FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_TRUCK
-setflag FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_TRUCK
-@ Skip the entire moving-in / clock / rival introduction.
-setvar VAR_LITTLEROOT_INTRO_STATE, 7
-@ Put Littleroot directly into "Saving Birch" state.
-setvar VAR_LITTLEROOT_TOWN_STATE, 2
-@ Move the twin away from the Route 101 entrance.
-setobjectxyperm LOCALID_TWIN, 10, 1
-additem ITEM_PORTABLE_HEAL
-additem ITEM_INFINITE_REPEL
-setobjectmovementtype LOCALID_TWIN, MOVEMENT_TYPE_FACE_UP
-clearflag FLAG_HIDE_LITTLEROOT_TOWN_FAT_MAN
-clearflag FLAG_HIDE_MAP_NAME_POPUP
-releaseall
-end
+	lockall
+	delay 15
+	playse SE_LEDGE
+	applymovement LOCALID_PLAYER, LittlerootTown_Movement_PlayerStepOffTruck
+	waitmovement 0
+	setflag FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_TRUCK
+	setflag FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_TRUCK
+	@ Skip the entire moving-in / clock / rival introduction.
+	setvar VAR_LITTLEROOT_INTRO_STATE, 7
+	@ Put Littleroot directly into "Saving Birch" state.
+	setvar VAR_LITTLEROOT_TOWN_STATE, 2
+	@ Move the twin away from the Route 101 entrance.
+	setobjectxyperm LOCALID_TWIN, 10, 1
+	additem ITEM_PORTABLE_HEAL
+	additem ITEM_INFINITE_REPEL
+	setobjectmovementtype LOCALID_TWIN, MOVEMENT_TYPE_FACE_UP
+	clearflag FLAG_HIDE_LITTLEROOT_TOWN_FAT_MAN
+	clearflag FLAG_HIDE_MAP_NAME_POPUP
+	releaseall
+	end
 
 LittlerootTown_EventScript_GoInsideWithMom::
 	delay 15
