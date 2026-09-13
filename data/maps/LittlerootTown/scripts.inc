@@ -129,8 +129,6 @@ LittlerootTown_EventScript_StepOffTruckMale::
 	@ Put Littleroot directly into "Saving Birch" state.
 	setvar VAR_LITTLEROOT_TOWN_STATE, 2
 	@ Move the twin away from the Route 101 entrance.
-	additem ITEM_PORTABLE_HEAL
-	additem ITEM_INFINITE_REPEL
 	setobjectmovementtype LOCALID_TWIN, MOVEMENT_TYPE_FACE_UP
 	clearflag FLAG_HIDE_LITTLEROOT_TOWN_FAT_MAN
 	clearflag FLAG_HIDE_MAP_NAME_POPUP
@@ -152,8 +150,6 @@ LittlerootTown_EventScript_StepOffTruckFemale::
 	@ Put Littleroot directly into "Saving Birch" state.
 	setvar VAR_LITTLEROOT_TOWN_STATE, 2
 	@ Move the twin away from the Route 101 entrance.
-	additem ITEM_PORTABLE_HEAL
-	additem ITEM_INFINITE_REPEL
 	setobjectmovementtype LOCALID_TWIN, MOVEMENT_TYPE_FACE_UP
 	clearflag FLAG_HIDE_LITTLEROOT_TOWN_FAT_MAN
 	clearflag FLAG_HIDE_MAP_NAME_POPUP
@@ -933,7 +929,7 @@ LittlerootTown_EventScript_GiveRunningShoes::
 	@ Randolocke starter kit
 	additem ITEM_INFINITE_REPEL, 1
 	additem ITEM_PORTABLE_HEAL, 1
-	additem ITEM_MACH_BIKE, 1
+	additem ITEM_ACRO_BIKE, 1
 	additem ITEM_POKE_BALL, 100
 	additem ITEM_GREAT_BALL, 10
 	additem ITEM_BIG_NUGGET, 999

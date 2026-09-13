@@ -585,7 +585,7 @@ static void AcroBikeTransition_Moving(u8 direction)
         if (ObjectMovingOnRockStairs(playerObjEvent, direction))
             PlayerWalkFast(direction);
         else
-            PlayerRideWaterCurrent(direction);
+            PlayerWalkFaster(direction);
     }
 }
 

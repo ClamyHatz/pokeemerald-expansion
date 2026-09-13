@@ -601,7 +601,9 @@ static bool8 ForcedMovement_MuddySlope(void)
 {
     struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];
 
-    if (playerObjEvent->movementDirection != DIR_NORTH || GetPlayerSpeed() < PLAYER_SPEED_FASTEST)
+    if (playerObjEvent->movementDirection != DIR_NORTH
+        || (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_ACRO_BIKE)
+            && GetPlayerSpeed() < PLAYER_SPEED_FASTEST))
     {
         Bike_UpdateBikeCounterSpeed(0);
         playerObjEvent->facingDirectionLocked = TRUE;

@@ -330,10 +330,9 @@ void ItemUseOutOfBattle_Bike(u8 taskId)
 
 static void ItemUseOnFieldCB_Bike(u8 taskId)
 {
-    if (ItemId_GetSecondaryId(gSpecialVar_ItemId) == MACH_BIKE)
-        GetOnOffBike(PLAYER_AVATAR_FLAG_MACH_BIKE);
-    else // ACRO_BIKE
-        GetOnOffBike(PLAYER_AVATAR_FLAG_ACRO_BIKE);
+    // Both bike items use the combined Mach + Acro bike.
+    GetOnOffBike(PLAYER_AVATAR_FLAG_ACRO_BIKE);
+
     ScriptUnfreezeObjectEvents();
     UnlockPlayerFieldControls();
     DestroyTask(taskId);
