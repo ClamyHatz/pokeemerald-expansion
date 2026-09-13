@@ -43,6 +43,7 @@
 #include "constants/rgb.h"
 #include "constants/songs.h"
 #include "constants/pokemon_icon.h"
+#include "caps.h"
 
 /*
     NOTE: This file is large. Some general groups of functions have
@@ -128,6 +129,7 @@ enum {
     MENU_SHIFT,
     MENU_PLACE,
     MENU_SUMMARY,
+    MENU_LEVEL_TO_CAP,
     MENU_RELEASE,
     MENU_MARK,
     MENU_JUMP,
@@ -594,6 +596,8 @@ static void AddBoxOptionsMenu(void);
 static u8 SetSelectionMenuTexts(void);
 static bool8 SetMenuTexts_Mon(void);
 static bool8 SetMenuTexts_Item(void);
+static void LevelStorageMonToCap(void);
+static bool8 CanStorageMonLevelToCap(void);
 
 // Choose box menu
 static void ChooseBoxMenu_CreateSprites(u8);
@@ -2659,6 +2663,12 @@ static void Task_OnSelectedMon(u8 taskId)
         case MENU_SUMMARY:
             PlaySE(SE_SELECT);
             SetPokeStorageTask(Task_ShowMonSummary);
+            break;
+        case MENU_LEVEL_TO_CAP:
+            PlaySE(SE_SELECT);
+            LevelStorageMonToCap();
+            ClearBottomWindow();
+            SetPokeStorageTask(Task_PokeStorageMain);
             break;
         case MENU_MARK:
             PlaySE(SE_SELECT);
@@ -7686,6 +7696,69 @@ static u8 SetSelectionMenuTexts(void)
         return SetMenuTexts_Item();
 }
 
+static bool8 CanStorageMonLevelToCap(void)
+{
+    u32 levelCap = GetCurrentLevelCap();
+
+    if (sIsMonBeingMoved)
+    {
+        return GetMonData(&sStorage->movingMon, MON_DATA_LEVEL) < levelCap;
+    }
+
+    if (sCursorArea == CURSOR_AREA_IN_PARTY)
+    {
+        return GetMonData(&gPlayerParty[sCursorPosition], MON_DATA_LEVEL) < levelCap;
+    }
+
+    if (sCursorArea == CURSOR_AREA_IN_BOX)
+    {
+        struct BoxPokemon *boxMon =
+            GetBoxedMonPtr(StorageGetCurrentBox(), sCursorPosition);
+
+        return GetBoxMonData(boxMon, MON_DATA_LEVEL) < levelCap;
+    }
+
+    return FALSE;
+}
+
+static void LevelStorageMonToCap(void)
+{
+    u32 levelCap = GetCurrentLevelCap();
+    u32 exp;
+    u16 species;
+
+    if (sIsMonBeingMoved)
+    {
+        struct Pokemon *mon = &sStorage->movingMon;
+
+        species = GetMonData(mon, MON_DATA_SPECIES);
+        exp = gExperienceTables[gSpeciesInfo[species].growthRate][levelCap];
+
+        SetMonData(mon, MON_DATA_EXP, &exp);
+        CalculateMonStats(mon);
+    }
+    else if (sCursorArea == CURSOR_AREA_IN_PARTY)
+    {
+        struct Pokemon *mon = &gPlayerParty[sCursorPosition];
+
+        species = GetMonData(mon, MON_DATA_SPECIES);
+        exp = gExperienceTables[gSpeciesInfo[species].growthRate][levelCap];
+
+        SetMonData(mon, MON_DATA_EXP, &exp);
+        CalculateMonStats(mon);
+    }
+    else if (sCursorArea == CURSOR_AREA_IN_BOX)
+    {
+        struct BoxPokemon *boxMon =
+            GetBoxedMonPtr(StorageGetCurrentBox(), sCursorPosition);
+
+        species = GetBoxMonData(boxMon, MON_DATA_SPECIES);
+        exp = gExperienceTables[gSpeciesInfo[species].growthRate][levelCap];
+
+        SetBoxMonData(boxMon, MON_DATA_EXP, &exp);
+    }
+}
+
 static bool8 SetMenuTexts_Mon(void)
 {
     u16 species = GetSpeciesAtCursorPosition();
@@ -7726,6 +7799,10 @@ static bool8 SetMenuTexts_Mon(void)
     }
 
     SetMenuText(MENU_SUMMARY);
+
+    if (CanStorageMonLevelToCap())
+        SetMenuText(MENU_LEVEL_TO_CAP);
+
     if (sStorage->boxOption == OPTION_MOVE_MONS)
     {
         if (sCursorArea == CURSOR_AREA_IN_BOX)
@@ -8009,6 +8086,7 @@ static const u8 *const sMenuTexts[] =
     [MENU_SHIFT]      = COMPOUND_STRING("SHIFT"),
     [MENU_PLACE]      = COMPOUND_STRING("PLACE"),
     [MENU_SUMMARY]    = COMPOUND_STRING("SUMMARY"),
+    [MENU_LEVEL_TO_CAP] = COMPOUND_STRING("LEVEL TO CAP"),
     [MENU_RELEASE]    = COMPOUND_STRING("RELEASE"),
     [MENU_MARK]       = COMPOUND_STRING("MARK"),
     [MENU_JUMP]       = COMPOUND_STRING("JUMP"),
