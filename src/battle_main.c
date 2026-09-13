@@ -1895,6 +1895,16 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
             u16 species = partyData[monIndex].species;
             u8 level = partyData[monIndex].lvl;
             u32 levelCap = GetCurrentLevelCap();
+            u8 highestOriginalLevel = 1;
+            u8 j;
+
+            for (j = 0; j < monsCount; j++)
+            {
+                u32 idx = monIndices[j];
+
+                if (partyData[idx].lvl > highestOriginalLevel)
+                    highestOriginalLevel = partyData[idx].lvl;
+            }
 
             bool32 isFirstRival =
                 seed == TRAINER_MAY_ROUTE_103_TREECKO
@@ -1906,19 +1916,47 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
 
             if (isFirstRival)
             {
-                // First rival should be level 9.
+                // First Route 103 rival remains intentionally low.
                 level = 9;
             }
             else if (trainer->trainerClass == TRAINER_CLASS_LEADER)
             {
-                if (i == monsCount - 1)
-                    level = levelCap;
-                else
+                // Gym leader progression:
+                // 1st mon = surrounding trainer level
+                // 2nd mon = just below ace
+                // 3rd+ mons = ace level
+                if (i == 0)
+                    level = max(1, levelCap - 3);
+                else if (i == 1)
                     level = max(1, levelCap - 1);
+                else
+                    level = levelCap;
             }
             else
             {
-                level = min(level + 6, levelCap);
+                u32 targetMaxLevel;
+                u32 levelDifference = highestOriginalLevel - partyData[monIndex].lvl;
+
+                if (trainer->trainerClass == TRAINER_CLASS_RIVAL
+                 || trainer->trainerClass == TRAINER_CLASS_AQUA_LEADER
+                 || trainer->trainerClass == TRAINER_CLASS_MAGMA_LEADER)
+                {
+                    // Rival / Archie / Maxie peak 1 below the current cap.
+                    targetMaxLevel = max(1, levelCap - 1);
+                }
+                else if (trainer->trainerClass == TRAINER_CLASS_AQUA_ADMIN
+                      || trainer->trainerClass == TRAINER_CLASS_MAGMA_ADMIN)
+                {
+                    // Team admins peak 2 below the current cap.
+                    targetMaxLevel = max(1, levelCap - 2);
+                }
+                else
+                {
+                    // Ordinary trainers peak 3 below the current cap.
+                    targetMaxLevel = max(1, levelCap - 4);
+                }
+
+                level = max(1, targetMaxLevel - levelDifference);
             }
 
             #if (RANDOMIZER_AVAILABLE)
