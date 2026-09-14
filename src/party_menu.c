@@ -331,7 +331,7 @@ static void HandleChooseMonSelection(u8, s8 *);
 static u16 PartyMenuButtonHandler(s8 *);
 static s8 *GetCurrentPartySlotPtr(void);
 static bool8 IsSelectedMonNotEgg(u8 *);
-static bool8 DoesSelectedMonKnowHM(u8 *);
+//static bool8 DoesSelectedMonKnowHM(u8 *);
 static void PartyMenuRemoveWindow(u8 *);
 static void CB2_SetUpExitToBattleScreen(void);
 static void Task_ClosePartyMenuAfterText(u8);
@@ -1585,6 +1585,7 @@ static bool8 IsSelectedMonNotEgg(u8 *slotPtr)
     return TRUE;
 }
 
+/*
 static bool8 DoesSelectedMonKnowHM(u8 *slotPtr)
 {
     if (B_CATCH_SWAP_CHECK_HMS == FALSE)
@@ -1603,6 +1604,7 @@ static bool8 DoesSelectedMonKnowHM(u8 *slotPtr)
     }
     return FALSE;
 }
+*/
 
 static void HandleChooseMonCancel(u8 taskId, s8 *slotPtr)
 {
@@ -2721,8 +2723,10 @@ static void PartyMenuRemoveWindow(u8 *ptr)
     if (*ptr != WINDOW_NONE)
     {
         ClearStdWindowAndFrameToTransparent(*ptr, FALSE);
+        ClearWindowTilemap(*ptr);
         RemoveWindow(*ptr);
         *ptr = WINDOW_NONE;
+
         ScheduleBgCopyTilemapToVram(2);
     }
 }
@@ -2873,8 +2877,17 @@ static u8 CreateLevelUpStatsWindow(void)
 
 static void RemoveLevelUpStatsWindow(void)
 {
-    ClearWindowTilemap(sPartyMenuInternal->windowId[0]);
-    PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[0]);
+    u8 windowId = sPartyMenuInternal->windowId[0];
+
+    if (windowId != WINDOW_NONE)
+    {
+        ClearStdWindowAndFrameToTransparent(windowId, TRUE);
+        ClearWindowTilemap(windowId);
+        RemoveWindow(windowId);
+        sPartyMenuInternal->windowId[0] = WINDOW_NONE;
+
+        ScheduleBgCopyTilemapToVram(2);
+    }
 }
 
 static void SetPartyMonSelectionActions(struct Pokemon *mons, u8 slotId, u8 action)
@@ -3069,14 +3082,14 @@ static void Task_HandleSelectionMenuInput(u8 taskId)
             break;
         case MENU_B_PRESSED:
             PlaySE(SE_SELECT);
-            PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[2]);
+            PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[0]);
             if (sPartyMenuInternal->actions[sPartyMenuInternal->numActions - 1] >= MENU_FIELD_MOVES)
                 CursorCb_FieldMove(taskId);
             else
                 sCursorOptions[sPartyMenuInternal->actions[sPartyMenuInternal->numActions - 1]].func(taskId);
             break;
         default:
-            PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[2]);
+            PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[0]);
             if (sPartyMenuInternal->actions[input] >= MENU_FIELD_MOVES)
                 CursorCb_FieldMove(taskId);
             else
