@@ -5619,6 +5619,9 @@ static bool32 IsPartyMenuEvolutionEntryEligible(struct Pokemon *mon, const struc
     {
     case EVO_NONE:
         return FALSE;
+    case EVO_TRADE:
+    case EVO_TRADE_ITEM:
+        return FALSE;
 
     // Keep the level requirement, ignore the additional gimmick.
     case EVO_LEVEL:
