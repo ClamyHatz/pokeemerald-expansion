@@ -349,8 +349,25 @@ static u32 ScriptGiveMonParameterized(u8 side, u8 slot, u16 species, u8 level, u
     int sentToPc;
     struct Pokemon mon;
     u32 i;
-    u8 genderRatio = gSpeciesInfo[species].genderRatio;
+    u8 genderRatio;
     u16 targetSpecies;
+
+    #if RANDOMIZER_AVAILABLE == TRUE
+        if (RandomizerFeatureEnabled(RANDOMIZE_STARTER_AND_GIFT_MON))
+        {
+            for (i = 0; i < STARTER_AND_GIFT_MON_COUNT; i++)
+            {
+                if (species == gStarterAndGiftMonTable[i])
+                {
+                    species = RandomizeStarterAndGiftMon(i, gStarterAndGiftMonTable);
+                    break;
+                }
+            }
+        }
+    #endif
+
+    genderRatio = gSpeciesInfo[species].genderRatio;
+    gSpecialVar_0x8004 = species;
 
     // check whether to use a specific nature or a random one
     if (nature >= NUM_NATURES)

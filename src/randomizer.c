@@ -250,6 +250,31 @@ static inline bool32 IsItemTMHM(u16 itemId)
     return ItemId_GetPocket(itemId) == POCKET_TM_HM;
 }
 
+static inline bool32 IsFossil(u16 itemId)
+{
+    switch (itemId)
+    {
+    case ITEM_HELIX_FOSSIL:
+    case ITEM_DOME_FOSSIL:
+    case ITEM_OLD_AMBER:
+    case ITEM_ROOT_FOSSIL:
+    case ITEM_CLAW_FOSSIL:
+    case ITEM_ARMOR_FOSSIL:
+    case ITEM_SKULL_FOSSIL:
+    case ITEM_COVER_FOSSIL:
+    case ITEM_PLUME_FOSSIL:
+    case ITEM_JAW_FOSSIL:
+    case ITEM_SAIL_FOSSIL:
+    case ITEM_FOSSILIZED_BIRD:
+    case ITEM_FOSSILIZED_FISH:
+    case ITEM_FOSSILIZED_DRAKE:
+    case ITEM_FOSSILIZED_DINO:
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
 static inline bool32 IsItemHM(u16 itemId)
 {
     return itemId >= ITEM_HM01 && IsItemTMHM(itemId);
@@ -264,7 +289,20 @@ static inline bool32 IsKeyItem(u16 itemId)
 // ITEM_NONE also should not be randomized as it is invalid.
 static inline bool32 ShouldRandomizeItem(u16 itemId)
 {
-    return !(IsItemHM(itemId) || IsKeyItem(itemId) || itemId == ITEM_NONE);
+    return !(IsItemHM(itemId)
+          || IsKeyItem(itemId)
+          || IsFossil(itemId)
+          || itemId == ITEM_NONE);
+}
+
+static inline bool32 ShouldRandomizeOriginalItem(u16 itemId)
+{
+    // Escape Rope may be classified as a key item, but field/gift
+    // Escape Ropes should still be randomized.
+    if (itemId == ITEM_ESCAPE_ROPE)
+        return TRUE;
+
+    return ShouldRandomizeItem(itemId);
 }
 
 #include "data/randomizer/item_whitelist.h"
@@ -320,7 +358,7 @@ u16 RandomizeFoundItem(u16 itemId, u8 mapNum, u8 mapGroup, u8 localId)
     // Randomize everything else to everything else.
     do {
         result = GetRandomizerPoolItem(&state);
-    } while(!ShouldRandomizeItem(result) || IsItemHM(result));
+    } while(!ShouldRandomizeOriginalItem(result) || IsItemHM(result));
 
     return result;
 
@@ -360,7 +398,7 @@ u16 RandomizeGiftItem(u16 itemId, u16 amount, u8 mapNum, u8 mapGroup)
     {
         result = GetRandomizerPoolItem(&state);
     }
-    while (!ShouldRandomizeItem(result) || IsItemHM(result));
+    while (!ShouldRandomizeOriginalItem(result) || IsItemHM(result));
 
     return result;
 }
