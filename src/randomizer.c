@@ -1345,7 +1345,8 @@ static u16 GetRandomizerEvolutionRoot(u16 species)
 // Given a species and an abilityNum, returns a replacement for that ability.
 u16 RandomizeAbility(u16 species, u8 abilityNum, u16 originalAbility)
 {
-    if (species == SPECIES_SHEDINJA)
+    if (species == SPECIES_SHEDINJA
+     || species == SPECIES_DITTO)
         return originalAbility;
 
     if (RandomizerFeatureEnabled(RANDOMIZE_ABILITIES) && originalAbility != ABILITY_NONE)
@@ -1356,8 +1357,6 @@ u16 RandomizeAbility(u16 species, u8 abilityNum, u16 originalAbility)
 
         u16 abilitySpecies = GetRandomizerEvolutionRoot(species);
 
-        // Seed by evolutionary family + ability slot.
-        // Evolutions therefore preserve their randomized ability.
         seed = ((u32)abilitySpecies) << 8;
         seed |= abilityNum;
 
@@ -1366,11 +1365,12 @@ u16 RandomizeAbility(u16 species, u8 abilityNum, u16 originalAbility)
             seed,
             abilitySpecies);
 
-        // Randomize abilities
         do
         {
-            result = sRandomizerAbilityWhitelist[RandomizerNextRange(&state, ABILITY_WHITELIST_SIZE)];
-        } while(IsAbilityIllegal(result));
+            result = sRandomizerAbilityWhitelist[
+                RandomizerNextRange(&state, ABILITY_WHITELIST_SIZE)
+            ];
+        } while (IsAbilityIllegal(result));
 
         return result;
     }
