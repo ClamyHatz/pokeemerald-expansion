@@ -303,9 +303,10 @@ static u8 AcroBikeHandleInputNormal(u8 *newDirection, u16 newKeys, u16 heldKeys)
 {
     u8 direction = GetPlayerMovementDirection();
 
-    gPlayerAvatar.bikeFrameCounter = 0;
     if (*newDirection == DIR_NONE)
     {
+        Bike_SetBikeStill();
+
         if (newKeys & B_BUTTON)
         {
             //We're standing still with the B button held.
@@ -330,6 +331,8 @@ static u8 AcroBikeHandleInputNormal(u8 *newDirection, u16 newKeys, u16 heldKeys)
     }
     if (*newDirection != direction && gPlayerAvatar.runningState != MOVING)
     {
+        Bike_SetBikeStill();
+
         gPlayerAvatar.acroBikeState = ACRO_STATE_TURNING;
         gPlayerAvatar.newDirBackup = *newDirection;
         gPlayerAvatar.runningState = NOT_MOVING;
@@ -582,10 +585,20 @@ static void AcroBikeTransition_Moving(u8 direction)
     }
     else
     {
-        if (ObjectMovingOnRockStairs(playerObjEvent, direction))
-            PlayerWalkFast(direction);
-        else
-            PlayerWalkFaster(direction);
+        if (ObjectMovingOnRockStairs(playerObjEvent, direction)
+         && gPlayerAvatar.bikeFrameCounter > 1)
+        {
+            gPlayerAvatar.bikeFrameCounter--;
+        }
+
+        sMachBikeSpeedCallbacks[gPlayerAvatar.bikeFrameCounter](direction);
+
+        gPlayerAvatar.bikeSpeed =
+            gPlayerAvatar.bikeFrameCounter
+            + (gPlayerAvatar.bikeFrameCounter >> 1);
+
+        if (gPlayerAvatar.bikeFrameCounter < 2)
+            gPlayerAvatar.bikeFrameCounter++;
     }
 }
 
@@ -1042,15 +1055,13 @@ static void Bike_SetBikeStill(void)
 
 s16 GetPlayerSpeed(void)
 {
-    // because the player pressed a direction, it won't ever return a speed of 0 since this function returns the player's current speed.
-    s16 machSpeeds[3];
+    u8 speedStage = gPlayerAvatar.bikeFrameCounter;
 
-    memcpy(machSpeeds, sMachBikeSpeeds, sizeof(machSpeeds));
+    if (speedStage > 2)
+        speedStage = 2;
 
-    if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_MACH_BIKE)
-        return machSpeeds[gPlayerAvatar.bikeFrameCounter];
-    else if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_ACRO_BIKE)
-        return PLAYER_SPEED_FASTER;
+    if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
+        return sMachBikeSpeeds[speedStage];
     else if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_SURFING | PLAYER_AVATAR_FLAG_DASH))
         return PLAYER_SPEED_FAST;
     else

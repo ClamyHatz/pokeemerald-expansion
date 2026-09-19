@@ -1857,7 +1857,7 @@ void CustomTrainerPartyAssignMoves(struct Pokemon *mon, const struct TrainerMon 
 
 static u32 GetTrainerHistoricalLevelCap(u16 trainerId)
 {
-    u16 mapSec = GetCurrentRegionMapSectionId();
+    u16 mapSec = gMapHeader.regionMapSectionId;
 
     // Route 111 is one map but spans several progression stages.
     if (mapSec == MAPSEC_ROUTE_111)
