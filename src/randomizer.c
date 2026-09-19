@@ -1026,29 +1026,34 @@ EWRAM_DATA static u16 sRandomizedMons[STARTER_AND_GIFT_MON_COUNT] = {0};
 
 u16 RandomizeStarterAndGiftMon(u16 originalSlot, const u16* originalStarterAndGiftMons)
 {
-    if (RandomizerFeatureEnabled(RANDOMIZE_STARTER_AND_GIFT_MON))
+    if (sLastMonRandomizerSeed != GetRandomizerSeed()
+     || sRandomizedMons[0] == SPECIES_NONE)
     {
-        if (sLastMonRandomizerSeed != GetRandomizerSeed() || sRandomizedMons[0] == SPECIES_NONE)
+        u32 starterHash = 5381;
+        u32 i;
+
+        for (i = 0; i < STARTER_AND_GIFT_MON_COUNT; i++)
         {
-            // The randomized starter table is stale or uninitialized. Fix that!
+            u16 originalStarter = originalStarterAndGiftMons[i];
 
-            // Hash the starter list so that which starters there are influences the seed.
-            u32 starterHash = 5381;
-            u32 i;
-            for (i = 0; i < STARTER_AND_GIFT_MON_COUNT; i++)
-            {
-                u16 originalStarter = originalStarterAndGiftMons[i];
-                starterHash = ((starterHash << 5) + starterHash) ^ (u8)originalStarter;
-                starterHash = ((starterHash << 5) + starterHash) ^ (u8)(originalStarter >> 8);
-            }
-
-            GetUniqueMonList(RANDOMIZER_REASON_STARTER_AND_GIFT_MON, GetRandomizerOption(RANDOMIZER_OPTION_SPECIES_MODE),
-                starterHash, 0, STARTER_AND_GIFT_MON_COUNT, originalStarterAndGiftMons, sRandomizedMons);
+            starterHash = ((starterHash << 5) + starterHash) ^ (u8)originalStarter;
+            starterHash = ((starterHash << 5) + starterHash) ^ (u8)(originalStarter >> 8);
         }
-        return sRandomizedMons[originalSlot];
+
+        GetUniqueMonList(
+            RANDOMIZER_REASON_STARTER_AND_GIFT_MON,
+            GetRandomizerOption(RANDOMIZER_OPTION_SPECIES_MODE),
+            starterHash,
+            0,
+            STARTER_AND_GIFT_MON_COUNT,
+            originalStarterAndGiftMons,
+            sRandomizedMons
+        );
+
+        sLastMonRandomizerSeed = GetRandomizerSeed();
     }
 
-    return originalStarterAndGiftMons[originalSlot];
+    return sRandomizedMons[originalSlot];
 }
 
 EWRAM_DATA static u32 sLastEggMonRandomizerSeed = 0;

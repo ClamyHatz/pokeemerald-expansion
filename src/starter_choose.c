@@ -352,14 +352,15 @@ static const struct SpriteTemplate sSpriteTemplate_StarterCircle =
 u16 GetStarterPokemon(u16 chosenStarterId)
 {
     u16 species;
-    if (chosenStarterId > STARTER_MON_COUNT)
+
+    if (chosenStarterId >= STARTER_MON_COUNT)
         chosenStarterId = 0;
 
-    #if RANDOMIZER_AVAILABLE == TRUE
-        species = RandomizeStarterAndGiftMon(chosenStarterId, sStarterMon);
-    #else
-        species = sStarterMon[chosenStarterId];
-    #endif
+#if RANDOMIZER_AVAILABLE == TRUE
+    species = RandomizeStarterAndGiftMon(chosenStarterId + 3, gStarterAndGiftMonTable);
+#else
+    species = sStarterMon[chosenStarterId];
+#endif
 
     return species;
 }

@@ -1855,28 +1855,186 @@ void CustomTrainerPartyAssignMoves(struct Pokemon *mon, const struct TrainerMon 
     }
 }
 
-static u32 GetTrainerStageLevelCap(u32 highestOriginalLevel)
+static u32 GetTrainerHistoricalLevelCap(u16 trainerId)
 {
-    if (highestOriginalLevel <= 15)
+    u16 mapSec = GetCurrentRegionMapSectionId();
+
+    // Route 111 is one map but spans several progression stages.
+    if (mapSec == MAPSEC_ROUTE_111)
+    {
+        switch (trainerId)
+        {
+        // South Route 111 / Winstrates: before Wattson.
+        case TRAINER_VICTOR:
+        case TRAINER_VICTORIA:
+        case TRAINER_VIVI:
+        case TRAINER_VICKY:
+            return 24;
+
+        // Mid / north Route 111, reached during the Flannery arc.
+        case TRAINER_DREW:
+        case TRAINER_HEIDI:
+        case TRAINER_BEAU:
+        case TRAINER_BECKY:
+        case TRAINER_DUSTY_1:
+        case TRAINER_TRAVIS:
+        case TRAINER_IRENE:
+        case TRAINER_WILTON_1:
+        case TRAINER_BROOKE_1:
+        case TRAINER_HAYDEN:
+        case TRAINER_BIANCA:
+        case TRAINER_TYRON:
+        case TRAINER_CELINA:
+        case TRAINER_CELIA:
+        case TRAINER_BRYAN:
+        case TRAINER_BRANDEN:
+            return 29;
+
+        // Desert-side trainer(s), available after Flannery.
+        case TRAINER_DAISUKE:
+            return 31;
+
+        default:
+            return 29;
+        }
+    }
+
+    switch (mapSec)
+    {
+    // =========================
+    // PRE-ROXANNE
+    // CAP 15
+    // =========================
+    case MAPSEC_LITTLEROOT_TOWN:
+    case MAPSEC_OLDALE_TOWN:
+    case MAPSEC_PETALBURG_CITY:
+    case MAPSEC_RUSTBORO_CITY:
+    case MAPSEC_ROUTE_101:
+    case MAPSEC_ROUTE_102:
+    case MAPSEC_ROUTE_103:
+    case MAPSEC_ROUTE_104:
+    case MAPSEC_ROUTE_116:
+    case MAPSEC_PETALBURG_WOODS:
+    case MAPSEC_RUSTURF_TUNNEL:
         return 15;
-    if (highestOriginalLevel <= 19)
+
+    // =========================
+    // AFTER ROXANNE
+    // CAP 19
+    // =========================
+    case MAPSEC_DEWFORD_TOWN:
+    case MAPSEC_SLATEPORT_CITY:
+    case MAPSEC_ROUTE_105:
+    case MAPSEC_ROUTE_106:
+    case MAPSEC_ROUTE_107:
+    case MAPSEC_ROUTE_108:
+    case MAPSEC_ROUTE_109:
+    case MAPSEC_GRANITE_CAVE:
         return 19;
-    if (highestOriginalLevel <= 24)
+
+    // =========================
+    // AFTER BRAWLY
+    // CAP 24
+    // =========================
+    case MAPSEC_MAUVILLE_CITY:
+    case MAPSEC_VERDANTURF_TOWN:
+    case MAPSEC_ROUTE_110:
+    case MAPSEC_ROUTE_117:
         return 24;
-    if (highestOriginalLevel <= 29)
+
+    // =========================
+    // AFTER WATTSON
+    // CAP 29
+    // =========================
+    case MAPSEC_LAVARIDGE_TOWN:
+    case MAPSEC_FALLARBOR_TOWN:
+    case MAPSEC_ROUTE_112:
+    case MAPSEC_ROUTE_113:
+    case MAPSEC_ROUTE_114:
+    case MAPSEC_ROUTE_115:
+    case MAPSEC_MT_CHIMNEY:
+    case MAPSEC_METEOR_FALLS:
+    case MAPSEC_METEOR_FALLS2:
+    case MAPSEC_FIERY_PATH:
+    case MAPSEC_FIERY_PATH2:
+    case MAPSEC_JAGGED_PASS:
+    case MAPSEC_JAGGED_PASS2:
         return 29;
-    if (highestOriginalLevel <= 31)
+
+    // =========================
+    // AFTER FLANNERY
+    // CAP 31
+    // =========================
+    // Most of this stage is backtracking to Norman.
+    // Route 111 desert is handled above by trainer ID.
+    case MAPSEC_DESERT_RUINS:
         return 31;
-    if (highestOriginalLevel <= 33)
+
+    // =========================
+    // AFTER NORMAN
+    // CAP 33
+    // =========================
+    case MAPSEC_FORTREE_CITY:
+    case MAPSEC_ROUTE_118:
+    case MAPSEC_ROUTE_119:
+    case MAPSEC_NEW_MAUVILLE:
+    case MAPSEC_ABANDONED_SHIP:
         return 33;
-    if (highestOriginalLevel <= 42)
+
+    // =========================
+    // AFTER WINONA
+    // CAP 42
+    // =========================
+    case MAPSEC_LILYCOVE_CITY:
+    case MAPSEC_MOSSDEEP_CITY:
+    case MAPSEC_ROUTE_120:
+    case MAPSEC_ROUTE_121:
+    case MAPSEC_ROUTE_122:
+    case MAPSEC_ROUTE_123:
+    case MAPSEC_ROUTE_124:
+    case MAPSEC_MT_PYRE:
+    case MAPSEC_AQUA_HIDEOUT_OLD:
+    case MAPSEC_SAFARI_ZONE:
+    case MAPSEC_SHOAL_CAVE:
         return 42;
-    if (highestOriginalLevel <= 50)
+
+    // =========================
+    // AFTER TATE & LIZA
+    // CAP 50
+    // =========================
+    case MAPSEC_SOOTOPOLIS_CITY:
+    case MAPSEC_ROUTE_125:
+    case MAPSEC_ROUTE_126:
+    case MAPSEC_ROUTE_127:
+    case MAPSEC_ROUTE_128:
+    case MAPSEC_UNDERWATER_124:
+    case MAPSEC_UNDERWATER_126:
+    case MAPSEC_UNDERWATER_127:
+    case MAPSEC_UNDERWATER_128:
+    case MAPSEC_UNDERWATER_SOOTOPOLIS:
+    case MAPSEC_SEAFLOOR_CAVERN:
+    case MAPSEC_UNDERWATER_SEAFLOOR_CAVERN:
+    case MAPSEC_CAVE_OF_ORIGIN:
         return 50;
-    if (highestOriginalLevel <= 63)
+
+    // =========================
+    // AFTER JUAN
+    // CAP 63
+    // =========================
+    case MAPSEC_EVER_GRANDE_CITY:
+    case MAPSEC_VICTORY_ROAD:
+    case MAPSEC_ROUTE_129:
+    case MAPSEC_ROUTE_130:
+    case MAPSEC_ROUTE_131:
+    case MAPSEC_ROUTE_132:
+    case MAPSEC_ROUTE_133:
+    case MAPSEC_ROUTE_134:
+    case MAPSEC_SKY_PILLAR:
         return 63;
 
-    return MAX_LEVEL;
+    default:
+        return GetCurrentLevelCap();
+    }
 }
 
 u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer *trainer, bool32 firstTrainer, u32 battleTypeFlags, u16 seed)
@@ -1907,32 +2065,23 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
         u32 monIndices[monsCount];
         DoTrainerPartyPool(trainer, monIndices, monsCount, battleTypeFlags);
 
-        u32 highestOriginalLevel = 1;
-        u32 trainerLevelCap;
+        u32 trainerLevelCap = GetTrainerHistoricalLevelCap(seed);
         u32 targetMaxLevel;
-
-        for (i = 0; i < trainer->partySize; i++)
-        {
-            if (trainer->party[i].lvl > highestOriginalLevel)
-                highestOriginalLevel = trainer->party[i].lvl;
-        }
-
-        trainerLevelCap = GetTrainerStageLevelCap(highestOriginalLevel);
 
         if (trainer->trainerClass == TRAINER_CLASS_RIVAL
          || trainer->trainerClass == TRAINER_CLASS_AQUA_LEADER
          || trainer->trainerClass == TRAINER_CLASS_MAGMA_LEADER)
         {
-            targetMaxLevel = MAX(1, trainerLevelCap - 1);
+            targetMaxLevel = max(1, trainerLevelCap - 1);
         }
         else if (trainer->trainerClass == TRAINER_CLASS_AQUA_ADMIN
               || trainer->trainerClass == TRAINER_CLASS_MAGMA_ADMIN)
         {
-            targetMaxLevel = MAX(1, trainerLevelCap - 2);
+            targetMaxLevel = max(1, trainerLevelCap - 2);
         }
         else
         {
-            targetMaxLevel = MAX(1, trainerLevelCap - 3);
+            targetMaxLevel = max(1, trainerLevelCap - 3);
         }
 
         for (i = 0; i < monsCount; i++)
@@ -1946,7 +2095,6 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
             u32 ability = 0;
             u16 species = partyData[monIndex].species;
             u32 level;
-            u32 levelDifference = highestOriginalLevel - partyData[monIndex].lvl;
 
             bool32 isFirstRival =
                 seed == TRAINER_MAY_ROUTE_103_TREECKO
@@ -1963,18 +2111,15 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
             else if (trainer->trainerClass == TRAINER_CLASS_LEADER)
             {
                 if (i == 0)
-                    level = MAX(1, trainerLevelCap - 3);
+                    level = max(1, trainerLevelCap - 3);
                 else if (i == 1)
-                    level = MAX(1, trainerLevelCap - 1);
+                    level = max(1, trainerLevelCap - 1);
                 else
                     level = trainerLevelCap;
             }
             else
             {
-                if (targetMaxLevel > levelDifference)
-                    level = targetMaxLevel - levelDifference;
-                else
-                    level = 1;
+                level = targetMaxLevel;
             }
 
             #if (RANDOMIZER_AVAILABLE)

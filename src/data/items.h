@@ -13776,11 +13776,9 @@ const struct Item gItemsInfo[] =
         .name = _("Macro Bike"),
         .price = 0,
         .description = COMPOUND_STRING(
-            "A folding bicycle\n"
-            "capable of jumps\n"
-            "wheelies and\n"
-            "doubles your\n"
-            "speed or better."),
+            "A bicycle that\n"
+            "combines the Acro\n"
+            "and Mach bike."),
         .importance = 1,
         .pocket = POCKET_KEY_ITEMS,
         .type = ITEM_USE_FIELD,

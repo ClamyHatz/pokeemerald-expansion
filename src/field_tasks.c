@@ -823,8 +823,11 @@ static void CrackedFloorPerStepCallback(u8 taskId)
     tPrevY = y;
     if (MetatileBehavior_IsCrackedFloor(behavior))
     {
-        if (GetPlayerSpeed() != PLAYER_SPEED_FASTEST)
-            VarSet(VAR_ICE_STEP_COUNT, 0); // this var does double duty
+        if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_ACRO_BIKE)
+            && GetPlayerSpeed() != PLAYER_SPEED_FASTEST)
+        {
+            VarSet(VAR_ICE_STEP_COUNT, 0);
+        }
 
         if (tFloor1Delay == 0)
         {
