@@ -260,9 +260,9 @@ static inline bool32 IsFossil(u16 itemId)
 {
     switch (itemId)
     {
+    case ITEM_OLD_AMBER:
     case ITEM_HELIX_FOSSIL:
     case ITEM_DOME_FOSSIL:
-    case ITEM_OLD_AMBER:
     case ITEM_ROOT_FOSSIL:
     case ITEM_CLAW_FOSSIL:
     case ITEM_ARMOR_FOSSIL:
@@ -272,9 +272,9 @@ static inline bool32 IsFossil(u16 itemId)
     case ITEM_JAW_FOSSIL:
     case ITEM_SAIL_FOSSIL:
     case ITEM_FOSSILIZED_BIRD:
-    case ITEM_FOSSILIZED_FISH:
-    case ITEM_FOSSILIZED_DRAKE:
     case ITEM_FOSSILIZED_DINO:
+    case ITEM_FOSSILIZED_DRAKE:
+    case ITEM_FOSSILIZED_FISH:
         return TRUE;
     default:
         return FALSE;
@@ -339,7 +339,7 @@ u16 RandomizeFoundItem(u16 itemId, u8 mapNum, u8 mapGroup, u8 localId)
     u16 result;
     u32 mapSeed;
 
-    if (IsKeyItem(itemId) || itemId == ITEM_NONE)
+    if (IsKeyItem(itemId) || IsFossil(itemId) || itemId == ITEM_NONE)
         return itemId;
 
     // Seed the generator using the original item and the object event that led up
