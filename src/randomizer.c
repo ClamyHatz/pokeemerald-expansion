@@ -207,7 +207,6 @@ struct Sfc32State RandomizerRandSeed(enum RandomizerReason reason, u32 data1, u3
     return state;
 }
 
-
 // This uses a slightly accelerated bitmasking method.
 u32 RandomizerNextRange(struct Sfc32State* state, u32 range)
 {

@@ -1857,7 +1857,11 @@ void CustomTrainerPartyAssignMoves(struct Pokemon *mon, const struct TrainerMon 
 
 static u32 GetTrainerHistoricalLevelCap(u16 trainerId)
 {
-    u16 mapSec = gMapHeader.regionMapSectionId;
+    u16 currentMap = (gSaveBlock1Ptr->location.mapGroup << 8)
+                   | gSaveBlock1Ptr->location.mapNum;
+
+    if (currentMap == MAP_PETALBURG_CITY_GYM)
+        return 31;
 
     // Route 111 is one map but spans several progression stages.
     if (mapSec == MAPSEC_ROUTE_111)
