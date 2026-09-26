@@ -343,7 +343,7 @@ void SetTeraType(struct ScriptContext *ctx)
  * if side/slot are assigned, it will create the mon at the assigned party location
  * if slot == PARTY_SIZE, it will give the mon to first available party or storage slot
  */
-static u32 ScriptGiveMonParameterized(u8 side, u8 slot, u16 species, u8 level, u16 item, enum PokeBall ball, u8 nature, u8 abilityNum, u8 gender, u8 *evs, u8 *ivs, u16 *moves, bool8 isShiny, bool8 gmaxFactor, u8 teraType, u8 dmaxLevel)
+static u32 ScriptGiveMonParameterized(u8 side,u8 slot,u16 species,u8 level,u16 item,enum PokeBall ball,u8 nature,u8 abilityNum,u8 gender,u8 *evs,u8 *ivs,u16 *moves,bool8 isShiny,bool8 gmaxFactor,u8 teraType,u8 dmaxLevel,bool32 randomizeSpecies)
 {
     u16 nationalDexNum;
     int sentToPc;
@@ -353,7 +353,8 @@ static u32 ScriptGiveMonParameterized(u8 side, u8 slot, u16 species, u8 level, u
     u16 targetSpecies;
 
     #if RANDOMIZER_AVAILABLE == TRUE
-        if (RandomizerFeatureEnabled(RANDOMIZE_STARTER_AND_GIFT_MON))
+        if (randomizeSpecies
+         && RandomizerFeatureEnabled(RANDOMIZE_STARTER_AND_GIFT_MON))
         {
             for (i = 0; i < STARTER_AND_GIFT_MON_COUNT; i++)
             {
@@ -507,7 +508,47 @@ u32 ScriptGiveMon(u16 species, u8 level, u16 item)
                                 MAX_PER_STAT_IVS + 1, MAX_PER_STAT_IVS + 1, MAX_PER_STAT_IVS + 1};  // ScriptGiveMonParameterized won't touch the stats' IV.
     u16 moves[MAX_MON_MOVES] = {MOVE_NONE, MOVE_NONE, MOVE_NONE, MOVE_NONE};
 
-    return ScriptGiveMonParameterized(0, PARTY_SIZE, species, level, item, ITEM_POKE_BALL, NUM_NATURES, NUM_ABILITY_PERSONALITY, MON_GENDERLESS, evs, ivs, moves, FALSE, FALSE, NUMBER_OF_MON_TYPES, 0);
+    return ScriptGiveMonParameterized(0,PARTY_SIZE,species,level,item,ITEM_POKE_BALL,NUM_NATURES,NUM_ABILITY_PERSONALITY,MON_GENDERLESS,evs,ivs,moves,FALSE,FALSE,NUMBER_OF_MON_TYPES,0,TRUE);
+}
+
+u32 ScriptGiveMonAlreadyRandomized(u16 species, u8 level, u16 item)
+{
+    u8 evs[NUM_STATS] = {0, 0, 0, 0, 0, 0};
+    u8 ivs[NUM_STATS] =
+    {
+        MAX_PER_STAT_IVS + 1,
+        MAX_PER_STAT_IVS + 1,
+        MAX_PER_STAT_IVS + 1,
+        MAX_PER_STAT_IVS + 1,
+        MAX_PER_STAT_IVS + 1,
+        MAX_PER_STAT_IVS + 1
+    };
+    u16 moves[MAX_MON_MOVES] =
+    {
+        MOVE_NONE,
+        MOVE_NONE,
+        MOVE_NONE,
+        MOVE_NONE
+    };
+
+    return ScriptGiveMonParameterized(
+        0,
+        PARTY_SIZE,
+        species,
+        level,
+        item,
+        ITEM_POKE_BALL,
+        NUM_NATURES,
+        NUM_ABILITY_PERSONALITY,
+        MON_GENDERLESS,
+        evs,
+        ivs,
+        moves,
+        FALSE,
+        FALSE,
+        NUMBER_OF_MON_TYPES,
+        0,
+        FALSE);
 }
 
 #define PARSE_FLAG(n, default_) (flags & (1 << (n))) ? VarGet(ScriptReadHalfword(ctx)) : (default_)
@@ -605,13 +646,16 @@ void ScrCmd_createmonrandom(struct ScriptContext *ctx)
     u8 level          = VarGet(ScriptReadHalfword(ctx));
 
     #if RANDOMIZER_AVAILABLE == TRUE
-        u16 j = 0;
-        for(j = 0; j < STARTER_AND_GIFT_MON_COUNT; j++)
+        u16 j;
+
+        for (j = 0; j < STARTER_AND_GIFT_MON_COUNT; j++)
         {
-            if(gStarterAndGiftMonTable[j] == species)
+            if (gStarterAndGiftMonTable[j] == species)
+            {
+                species = RandomizeStarterAndGiftMon(j, gStarterAndGiftMonTable);
                 break;
+            }
         }
-        species = RandomizeStarterAndGiftMon(j, gStarterAndGiftMonTable);
     #endif
 
     u32 flags         = ScriptReadWord(ctx);
