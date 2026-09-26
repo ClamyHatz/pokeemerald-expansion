@@ -484,26 +484,22 @@ static inline u16 GetSpeciesGroup(const struct SpeciesTable* table, u16 species)
 
 static void GetGroupRange(u16 group, enum RandomizerSpeciesMode mode, u16 *resultMin, u16 *resultMax)
 {
-    // This should never be called on a GROUP_INVALID mon, but if it happens,
-    // GROUP_INVALID should be the only valid group.
     if (group == GROUP_INVALID)
     {
         *resultMax = *resultMin = group;
         return;
     }
 
-    // BST mode: species can randomize to species with similar BST.
     if (mode == MON_RANDOM_BST)
     {
-        // Choose a 10.24% range around the base BST.
-        s32 base, minScaled, maxScaled;
-        base = group * 1024;
-        minScaled = (base - group * 200) / 1024;
-        maxScaled = (base + group * 200) / 1024;
-        *resultMin = (u16)max(minScaled, 0);
-        *resultMax =(u16)min(maxScaled, GROUP_INVALID-1);
+        // Tight asymmetric BST window:
+        // allow a little weaker, but more room upward.
+        s32 minBst = (s32)group - 20;
+        s32 maxBst = (s32)group + 35;
+
+        *resultMin = (u16)max(minBst, 0);
+        *resultMax = (u16)min(maxBst, GROUP_INVALID - 1);
     }
-    // Species in the same category can randomize to each other.
     else
     {
         *resultMax = *resultMin = group;
