@@ -1857,6 +1857,7 @@ void CustomTrainerPartyAssignMoves(struct Pokemon *mon, const struct TrainerMon 
 
 static u32 GetTrainerHistoricalLevelCap(u16 trainerId)
 {
+    u16 mapSec = gMapHeader.regionMapSectionId;
     u16 currentMap = (gSaveBlock1Ptr->location.mapGroup << 8)
                    | gSaveBlock1Ptr->location.mapNum;
 
@@ -2019,6 +2020,13 @@ static u32 GetTrainerHistoricalLevelCap(u16 trainerId)
     case MAPSEC_SEAFLOOR_CAVERN:
     case MAPSEC_UNDERWATER_SEAFLOOR_CAVERN:
     case MAPSEC_CAVE_OF_ORIGIN:
+    case MAPSEC_ROUTE_129:
+    case MAPSEC_ROUTE_130:
+    case MAPSEC_ROUTE_131:
+    case MAPSEC_ROUTE_132:
+    case MAPSEC_ROUTE_133:
+    case MAPSEC_ROUTE_134:
+    case MAPSEC_SKY_PILLAR:
         return 50;
 
     // =========================
@@ -2027,13 +2035,6 @@ static u32 GetTrainerHistoricalLevelCap(u16 trainerId)
     // =========================
     case MAPSEC_EVER_GRANDE_CITY:
     case MAPSEC_VICTORY_ROAD:
-    case MAPSEC_ROUTE_129:
-    case MAPSEC_ROUTE_130:
-    case MAPSEC_ROUTE_131:
-    case MAPSEC_ROUTE_132:
-    case MAPSEC_ROUTE_133:
-    case MAPSEC_ROUTE_134:
-    case MAPSEC_SKY_PILLAR:
         return 63;
 
     default:
@@ -2085,7 +2086,8 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
         }
         else
         {
-            targetMaxLevel = max(1, trainerLevelCap - 3);
+            // Ordinary route/gym trainers are 75% of the area's historical cap.
+            targetMaxLevel = max(1, (trainerLevelCap * 75) / 100);
         }
 
         for (i = 0; i < monsCount; i++)
@@ -2114,15 +2116,27 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
             }
             else if (trainer->trainerClass == TRAINER_CLASS_LEADER)
             {
-                if (i == 0)
-                    level = max(1, trainerLevelCap - 3);
-                else if (i == 1)
-                    level = max(1, trainerLevelCap - 1);
-                else
+                if (monsCount == 1)
+                {
                     level = trainerLevelCap;
+                }
+                else if (i == monsCount - 1)
+                {
+                    // Only the ace reaches the actual cap.
+                    level = trainerLevelCap;
+                }
+                else if (i == monsCount - 2)
+                {
+                    level = max(1, trainerLevelCap - 2);
+                }
+                else
+                {
+                    level = max(1, trainerLevelCap - 5);
+                }
             }
             else
             {
+                git add .
                 level = targetMaxLevel;
             }
 
