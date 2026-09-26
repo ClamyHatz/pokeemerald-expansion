@@ -494,8 +494,8 @@ static void GetGroupRange(u16 group, enum RandomizerSpeciesMode mode, u16 *resul
     {
         // Tight asymmetric BST window:
         // allow a little weaker, but more room upward.
-        s32 minBst = (s32)group - 20;
-        s32 maxBst = (s32)group + 35;
+        s32 minBst = (s32)group - 40;
+        s32 maxBst = (s32)group + 55;
 
         *resultMin = (u16)max(minBst, 0);
         *resultMax = (u16)min(maxBst, GROUP_INVALID - 1);
@@ -506,7 +506,6 @@ static void GetGroupRange(u16 group, enum RandomizerSpeciesMode mode, u16 *resul
     }
 }
 
-//
 static void GetIndicesFromGroupRange(const struct SpeciesTable *table, u16 minGroup, u16 maxGroup, u16 *start, u16 *end)
 {
     u16 index, leftBound, rightBound, maxRightBound;
