@@ -46,6 +46,7 @@
 #include "caps.h"
 #include "battle.h"
 #include "menu_specialized.h"
+#include "evolution_scene.h"
 
 /*
     NOTE: This file is large. Some general groups of functions have
@@ -566,6 +567,10 @@ enum
 static EWRAM_DATA struct Pokemon sStorageLevelMon = {0};
 static EWRAM_DATA u16 sStorageLevelStats[NUM_STATS * 2] = {0};
 static EWRAM_DATA u16 sStorageMoveToLearn = MOVE_NONE;
+static EWRAM_DATA struct Pokemon sStorageEvolutionMon = {0};
+static EWRAM_DATA bool8 sStorageEvolutionFromBox = FALSE;
+static EWRAM_DATA u8 sStorageEvolutionBox = 0;
+static EWRAM_DATA u8 sStorageEvolutionPos = 0;
 
 static EWRAM_DATA u8 sStorageLevelInitialLevel = 0;
 static EWRAM_DATA u8 sStorageLevelFinalLevel = 0;
@@ -578,7 +583,11 @@ static EWRAM_DATA bool8 sStorageLevelFirstMove = FALSE;
 static EWRAM_DATA bool8 sStorageLevelActive = FALSE;
 static EWRAM_DATA bool8 sStorageLevelResumeAfterSummary = FALSE;
 
+
 // Main tasks
+static bool8 CanStorageMonEvolve(void);
+static void BeginStorageEvolution(void);
+static void CB2_ReturnFromStorageEvolution(void);
 static void Task_InitPokeStorage(u8);
 static void Task_PlaceMon(u8);
 static void Task_ChangeScreen(u8);
@@ -2824,6 +2833,11 @@ static void Task_OnSelectedMon(u8 taskId)
             PlaySE(SE_SELECT);
             ClearBottomWindow();
             BeginStorageLevelToCap();
+            break;
+        case MENU_EVOLVE:
+            PlaySE(SE_SELECT);
+            ClearBottomWindow();
+            BeginStorageEvolution();
             break;
         case MENU_MARK:
             PlaySE(SE_SELECT);
@@ -7851,6 +7865,36 @@ static u8 SetSelectionMenuTexts(void)
         return SetMenuTexts_Item();
 }
 
+static bool8 CanStorageMonEvolve(void)
+{
+    struct Pokemon mon;
+
+    if (sIsMonBeingMoved)
+        return FALSE;
+
+    if (sStorage->displayMonIsEgg)
+        return FALSE;
+
+    if (sCursorArea == CURSOR_AREA_IN_PARTY)
+    {
+        return CanPartyMenuEvolve(
+            &gPlayerParty[sCursorPosition]
+        );
+    }
+
+    if (sCursorArea == CURSOR_AREA_IN_BOX)
+    {
+        struct BoxPokemon *boxMon =
+            GetBoxedMonPtr(StorageGetCurrentBox(), sCursorPosition);
+
+        BoxMonToMon(boxMon, &mon);
+
+        return CanPartyMenuEvolve(&mon);
+    }
+
+    return FALSE;
+}
+
 static bool8 CanStorageMonLevelToCap(void)
 {
     u32 levelCap = GetCurrentLevelCap();
@@ -8355,6 +8399,9 @@ static bool8 SetMenuTexts_Mon(void)
     if (CanStorageMonLevelToCap())
         SetMenuText(MENU_LEVEL_TO_CAP);
 
+    if (CanStorageMonEvolve())
+        SetMenuText(MENU_EVOLVE);
+
     if (sStorage->boxOption == OPTION_MOVE_MONS)
     {
         if (sCursorArea == CURSOR_AREA_IN_BOX)
@@ -8367,6 +8414,73 @@ static bool8 SetMenuTexts_Mon(void)
     SetMenuText(MENU_RELEASE);
     SetMenuText(MENU_CANCEL);
     return TRUE;
+}
+
+static void BeginStorageEvolution(void)
+{
+    struct Pokemon *mon;
+    u16 targetSpecies;
+
+    sStorageEvolutionFromBox = FALSE;
+
+    if (sCursorArea == CURSOR_AREA_IN_PARTY)
+    {
+        mon = &gPlayerParty[sCursorPosition];
+    }
+    else if (sCursorArea == CURSOR_AREA_IN_BOX)
+    {
+        struct BoxPokemon *boxMon =
+            GetBoxedMonPtr(StorageGetCurrentBox(), sCursorPosition);
+
+        sStorageEvolutionFromBox = TRUE;
+        sStorageEvolutionBox = StorageGetCurrentBox();
+        sStorageEvolutionPos = sCursorPosition;
+
+        BoxMonToMon(boxMon, &sStorageEvolutionMon);
+        mon = &sStorageEvolutionMon;
+    }
+    else
+    {
+        SetPokeStorageTask(Task_PokeStorageMain);
+        return;
+    }
+
+    targetSpecies = GetPartyMenuEvolutionTarget(mon);
+
+    if (targetSpecies == SPECIES_NONE)
+    {
+        SetPokeStorageTask(Task_PokeStorageMain);
+        return;
+    }
+
+    gCB2_AfterEvolution = CB2_ReturnFromStorageEvolution;
+
+    FreePokeStorageData();
+
+    BeginEvolutionScene(
+        mon,
+        targetSpecies,
+        TRUE,
+        0
+    );
+}
+
+static void CB2_ReturnFromStorageEvolution(void)
+{
+    if (sStorageEvolutionFromBox)
+    {
+        struct BoxPokemon *boxMon =
+            GetBoxedMonPtr(
+                sStorageEvolutionBox,
+                sStorageEvolutionPos
+            );
+
+        *boxMon = sStorageEvolutionMon.box;
+    }
+
+    sStorageEvolutionFromBox = FALSE;
+
+    CB2_ReturnToPokeStorage();
 }
 
 static bool8 SetMenuTexts_Item(void)
@@ -8639,7 +8753,7 @@ static const u8 *const sMenuTexts[] =
     [MENU_PLACE]      = COMPOUND_STRING("PLACE"),
     [MENU_SUMMARY]    = COMPOUND_STRING("SUMMARY"),
     [MENU_LEVEL_TO_CAP] = COMPOUND_STRING("LEVEL TO CAP"),
-    [MENU_EVOLVE] = COMPOUND_STRING("EVOLVE"),
+    [MENU_EVOLVE]     = COMPOUND_STRING("EVOLVE"),
     [MENU_RELEASE]    = COMPOUND_STRING("RELEASE"),
     [MENU_MARK]       = COMPOUND_STRING("MARK"),
     [MENU_JUMP]       = COMPOUND_STRING("JUMP"),

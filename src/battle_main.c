@@ -2136,7 +2136,6 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
             }
             else
             {
-                git add .
                 level = targetMaxLevel;
             }
 

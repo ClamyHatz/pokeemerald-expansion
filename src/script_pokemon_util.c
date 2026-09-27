@@ -635,7 +635,11 @@ void ScrCmd_createmon(struct ScriptContext *ctx)
     else
         Script_RequestEffects(SCREFF_V1);
 
-    gSpecialVar_Result = ScriptGiveMonParameterized(side, slot, species, level, item, ball, nature, abilityNum, gender, evs, ivs, moves, isShiny, gmaxFactor, teraType, dmaxLevel);
+    gSpecialVar_Result = ScriptGiveMonParameterized(
+        side, slot, species, level, item, ball, nature, abilityNum, gender,
+        evs, ivs, moves, isShiny, gmaxFactor, teraType, dmaxLevel,
+        TRUE
+    );
 }
 
 void ScrCmd_createmonrandom(struct ScriptContext *ctx)
@@ -731,7 +735,11 @@ void ScrCmd_createmonrandom(struct ScriptContext *ctx)
     else
         Script_RequestEffects(SCREFF_V1);
 
-    gSpecialVar_Result = ScriptGiveMonParameterized(side, slot, species, level, item, ball, nature, abilityNum, gender, evs, ivs, moves, isShiny, gmaxFactor, teraType, dmaxLevel);
+    gSpecialVar_Result = ScriptGiveMonParameterized(
+        side, slot, species, level, item, ball, nature, abilityNum, gender,
+        evs, ivs, moves, isShiny, gmaxFactor, teraType, dmaxLevel,
+        FALSE
+    );
 }
 
 #undef PARSE_FLAG
