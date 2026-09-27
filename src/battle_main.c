@@ -2114,7 +2114,9 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
             {
                 level = 9;
             }
-            else if (trainer->trainerClass == TRAINER_CLASS_LEADER)
+            else if (trainer->trainerClass == TRAINER_CLASS_LEADER
+                  || trainer->trainerClass == TRAINER_CLASS_ELITE_FOUR
+                  || trainer->trainerClass == TRAINER_CLASS_CHAMPION)
             {
                 if (monsCount == 1)
                 {
@@ -2122,7 +2124,7 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
                 }
                 else if (i == monsCount - 1)
                 {
-                    // Only the ace reaches the actual cap.
+                    // Ace reaches the area's historical cap.
                     level = trainerLevelCap;
                 }
                 else if (i == monsCount - 2)
@@ -2133,10 +2135,6 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
                 {
                     level = max(1, trainerLevelCap - 5);
                 }
-            }
-            else
-            {
-                level = targetMaxLevel;
             }
 
             #if (RANDOMIZER_AVAILABLE)
