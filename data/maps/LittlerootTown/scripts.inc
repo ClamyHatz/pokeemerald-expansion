@@ -41,6 +41,7 @@ LittlerootTown_MapScripts::
 
 LittlerootTown_OnTransition:
 	setflag FLAG_VISITED_LITTLEROOT_TOWN
+	setflag FLAG_HIDE_LITTLEROOT_TOWN_TWIN
 	call Common_EventScript_SetupRivalGfxId
 	call_if_eq VAR_LITTLEROOT_INTRO_STATE, 2, LittlerootTown_EventScript_MoveMomToMaysDoor
 	call_if_unset FLAG_RESCUED_BIRCH, LittlerootTown_EventScript_SetTwinPos
@@ -114,23 +115,44 @@ LittlerootTown_OnFrame:
 
 LittlerootTown_EventScript_StepOffTruckMale::
 	lockall
-	setvar VAR_0x8004, 5
-	setvar VAR_0x8005, 8
-	call LittlerootTown_EventScript_GoInsideWithMom
+
+	delay 15
+	playse SE_LEDGE
+	applymovement LOCALID_PLAYER, LittlerootTown_Movement_PlayerStepOffTruck
+	waitmovement 0
+	setobjectxyperm LOCALID_TWIN, 10, 1
+	setobjectmovementtype LOCALID_TWIN, MOVEMENT_TYPE_FACE_UP
 	setflag FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_TRUCK
-	warpsilent MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F, 8, 8
-	waitstate
+	setflag FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_TRUCK
+	@ Skip the entire moving-in / clock / rival introduction.
+	setvar VAR_LITTLEROOT_INTRO_STATE, 7
+	@ Put Littleroot directly into "Saving Birch" state.
+	setvar VAR_LITTLEROOT_TOWN_STATE, 2
+	@ Move the twin away from the Route 101 entrance.
+	setobjectmovementtype LOCALID_TWIN, MOVEMENT_TYPE_FACE_UP
+	clearflag FLAG_HIDE_LITTLEROOT_TOWN_FAT_MAN
+	clearflag FLAG_HIDE_MAP_NAME_POPUP
 	releaseall
 	end
 
 LittlerootTown_EventScript_StepOffTruckFemale::
 	lockall
-	setvar VAR_0x8004, 14
-	setvar VAR_0x8005, 8
-	call LittlerootTown_EventScript_GoInsideWithMom
+	delay 15
+	playse SE_LEDGE
+	applymovement LOCALID_PLAYER, LittlerootTown_Movement_PlayerStepOffTruck
+	waitmovement 0
+	setobjectxyperm LOCALID_TWIN, 10, 1
+	setobjectmovementtype LOCALID_TWIN, MOVEMENT_TYPE_FACE_UP
+	setflag FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_TRUCK
 	setflag FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_TRUCK
-	warpsilent MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F, 2, 8
-	waitstate
+	@ Skip the entire moving-in / clock / rival introduction.
+	setvar VAR_LITTLEROOT_INTRO_STATE, 7
+	@ Put Littleroot directly into "Saving Birch" state.
+	setvar VAR_LITTLEROOT_TOWN_STATE, 2
+	@ Move the twin away from the Route 101 entrance.
+	setobjectmovementtype LOCALID_TWIN, MOVEMENT_TYPE_FACE_UP
+	clearflag FLAG_HIDE_LITTLEROOT_TOWN_FAT_MAN
+	clearflag FLAG_HIDE_MAP_NAME_POPUP
 	releaseall
 	end
 
@@ -903,7 +925,17 @@ LittlerootTown_EventScript_GiveRunningShoes::
 	message LittlerootTown_Text_SwitchShoesWithRunningShoes
 	waitfanfare
 	setflag FLAG_RECEIVED_RUNNING_SHOES
+
+	@ Randolocke starter kit
+	additem ITEM_INFINITE_REPEL, 1
+	additem ITEM_PORTABLE_HEAL, 1
+	additem ITEM_ACRO_BIKE, 1
+	additem ITEM_POKE_BALL, 100
+	additem ITEM_GREAT_BALL, 10
+	additem ITEM_BIG_NUGGET, 999
+
 	msgbox LittlerootTown_Text_ExplainRunningShoes, MSGBOX_DEFAULT
+	msgbox LittlerootTown_Text_ExplainOtherItems, MSGBOX_DEFAULT
 	msgbox LittlerootTown_Text_ComeHomeIfAnythingHappens, MSGBOX_DEFAULT
 	closemessage
 	delay 30
@@ -946,6 +978,18 @@ LittlerootTown_Text_ExplainRunningShoes:
 	.string "RUNNING SHOES to run extra-fast!\p"
 	.string "“Slip on these RUNNING SHOES and race\n"
 	.string "in the great outdoors!”$"
+
+LittlerootTown_Text_ExplainOtherItems:
+	.string "I packed a few extra things for\n"
+	.string "your journey!\p"
+	.string "A PORTABLE HEAL so you can heal\n"
+	.string "on the go.\p"
+	.string "An INFINITE REPEL to keep the\n"
+	.string "annoying creatures at bay\p"
+	.string "Some POKé BALLS to catch\n"
+	.string "as much as you want!\p"
+	.string "And a few BIG NUGGETS for\n"
+	.string "some pocket change.$"
 
 LittlerootTown_Text_ComeHomeIfAnythingHappens:
 	.string "… … … … … … … …\n"

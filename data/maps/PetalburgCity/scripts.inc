@@ -11,10 +11,36 @@ PetalburgCity_MapScripts::
 
 PetalburgCity_OnTransition:
 	setflag FLAG_VISITED_PETALBURG_CITY
-	call_if_eq VAR_PETALBURG_CITY_STATE, 0, PetalburgCity_EventScript_MoveGymBoyToWestEntrance
+	call_if_eq VAR_PETALBURG_CITY_STATE, 0, PetalburgCity_EventScript_SkipFirstPetalburgIntro
 	call_if_eq VAR_PETALBURG_CITY_STATE, 2, PetalburgCity_EventScript_DisableMapNameAndMusic
 	call_if_eq VAR_PETALBURG_CITY_STATE, 4, PetalburgCity_EventScript_DisableMapNameAndMusic
 	call_if_eq VAR_PETALBURG_GYM_STATE, 8, PetalburgCity_EventScript_SetGymDoorsUnlocked
+	end
+
+PetalburgCity_EventScript_SkipFirstPetalburgIntro::
+	@ Pretend the first Norman/Wally sequence already happened.
+	setvar VAR_PETALBURG_CITY_STATE, 3
+	setvar VAR_PETALBURG_GYM_STATE, 2
+
+	@ Prevent Scott's west-exit encounter.
+	setvar VAR_SCOTT_PETALBURG_ENCOUNTER, 1
+
+	@ Story NPCs that should already be gone.
+	setflag FLAG_HIDE_PETALBURG_CITY_WALLY
+	setflag FLAG_HIDE_PETALBURG_CITY_WALLYS_MOM
+	setflag FLAG_HIDE_PETALBURG_CITY_SCOTT
+	setflag FLAG_HIDE_LITTLEROOT_TOWN_BIRCHS_LAB_RIVAL
+
+	special InitBirchState
+	return
+
+PetalburgCity_EventScript_OldRodFisherman::
+	lock
+	faceplayer
+	goto_if_set FLAG_RECEIVED_OLD_ROD, DewfordTown_EventScript_HowsFishing
+	msgbox DewfordTown_Text_GettingItchToFish, MSGBOX_YESNO
+	goto_if_eq VAR_RESULT, YES, DewfordTown_EventScript_GiveOldRod
+	goto_if_eq VAR_RESULT, NO, DewfordTown_EventScript_NotGettingItchToFish
 	end
 
 PetalburgCity_EventScript_MoveGymBoyToWestEntrance::
@@ -37,52 +63,18 @@ PetalburgCity_OnFrame:
 
 PetalburgCity_EventScript_WallyTutorial::
 	lockall
-	special SavePlayerParty
-	special LoadWallyZigzagoon
-	applymovement LOCALID_WALLY, PetalburgCity_Movement_WallyTutorialWally
-	applymovement OBJ_EVENT_ID_PLAYER, PetalburgCity_Movement_WallyTutorialPlayer
-	waitmovement 0
-	msgbox Route102_Text_WatchMeCatchPokemon, MSGBOX_DEFAULT
-	special StartWallyTutorialBattle
-	waitstate
-	msgbox Route102_Text_WallyIDidIt, MSGBOX_DEFAULT
-	applymovement LOCALID_WALLY, Common_Movement_WalkInPlaceFasterLeft, MAP_PETALBURG_CITY
-	waitmovement LOCALID_WALLY, MAP_PETALBURG_CITY
-	msgbox Route102_Text_LetsGoBack, MSGBOX_DEFAULT
-	closemessage
-	clearflag FLAG_HIDE_MAP_NAME_POPUP
 	setvar VAR_PETALBURG_CITY_STATE, 3
-	fadedefaultbgm
-	clearflag FLAG_DONT_TRANSITION_MUSIC
-	special LoadPlayerParty
 	setvar VAR_PETALBURG_GYM_STATE, 1
-	warp MAP_PETALBURG_CITY_GYM, 4, 108
-	waitstate
 	releaseall
 	end
 
 PetalburgCity_EventScript_WalkToWallyHouse::
 	lockall
-	setflag FLAG_HIDE_MAP_NAME_POPUP
-	applymovement LOCALID_WALLYS_DAD, PetalburgCity_Movement_WalkToWallyHouseWallysDad
-	applymovement OBJ_EVENT_ID_PLAYER, PetalburgCity_Movement_WalkToWallyHousePlayer
-	waitmovement 0
-	setvar VAR_0x8004, 7
-	setvar VAR_0x8005, 5
-	opendoor VAR_0x8004, VAR_0x8005
-	waitdooranim
-	applymovement LOCALID_WALLYS_DAD, PetalburgCity_Movement_WalkInsideHouseWallysDad
-	applymovement OBJ_EVENT_ID_PLAYER, PetalburgCity_Movement_WalkInsideHousePlayer
-	waitmovement 0
+	giveitem ITEM_HM_SURF
+	setflag FLAG_RECEIVED_HM_SURF
 	setflag FLAG_HIDE_PETALBURG_CITY_WALLYS_DAD
-	hideobjectat OBJ_EVENT_ID_PLAYER, MAP_PETALBURG_CITY
-	closedoor VAR_0x8004, VAR_0x8005
-	waitdooranim
-	clearflag FLAG_HIDE_MAP_NAME_POPUP
-	fadedefaultbgm
-	clearflag FLAG_DONT_TRANSITION_MUSIC
-	warp MAP_PETALBURG_CITY_WALLYS_HOUSE, 2, 4
-	waitstate
+	setvar VAR_PETALBURG_CITY_STATE, 5
+
 	releaseall
 	end
 

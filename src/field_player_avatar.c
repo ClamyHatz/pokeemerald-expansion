@@ -601,7 +601,9 @@ static bool8 ForcedMovement_MuddySlope(void)
 {
     struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];
 
-    if (playerObjEvent->movementDirection != DIR_NORTH || GetPlayerSpeed() < PLAYER_SPEED_FASTEST)
+    if (playerObjEvent->movementDirection != DIR_NORTH
+        || (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_ACRO_BIKE)
+            && GetPlayerSpeed() < PLAYER_SPEED_FASTEST))
     {
         Bike_UpdateBikeCounterSpeed(0);
         playerObjEvent->facingDirectionLocked = TRUE;
@@ -1751,17 +1753,17 @@ static void Task_WaitStopSurfing(u8 taskId)
 #define FISHING_STICKY_BOOST    36
 
 #if I_FISHING_BITE_ODDS >= GEN_4
-    #define FISHING_OLD_ROD_ODDS 75
-    #define FISHING_GOOD_ROD_ODDS 50
+    #define FISHING_OLD_ROD_ODDS 25
+    #define FISHING_GOOD_ROD_ODDS 25
     #define FISHING_SUPER_ROD_ODDS 25
 #elif I_FISHING_BITE_ODDS >= GEN_3
-    #define FISHING_OLD_ROD_ODDS 50
-    #define FISHING_GOOD_ROD_ODDS 50
-    #define FISHING_SUPER_ROD_ODDS 50
+    #define FISHING_OLD_ROD_ODDS 25
+    #define FISHING_GOOD_ROD_ODDS 25
+    #define FISHING_SUPER_ROD_ODDS 25
 #else
-    #define FISHING_OLD_ROD_ODDS 0
-    #define FISHING_GOOD_ROD_ODDS 33
-    #define FISHING_SUPER_ROD_ODDS 50
+    #define FISHING_OLD_ROD_ODDS 25
+    #define FISHING_GOOD_ROD_ODDS 25
+    #define FISHING_SUPER_ROD_ODDS 25
 #endif
 
 enum
@@ -1836,12 +1838,13 @@ static bool32 Fishing_GetRodOut(struct Task *task)
     const s16 minRounds1[] = {
         [OLD_ROD]   = 1,
         [GOOD_ROD]  = 1,
-        [SUPER_ROD] = 1
+        [SUPER_ROD] = 2
     };
+
     const s16 minRounds2[] = {
         [OLD_ROD]   = 1,
-        [GOOD_ROD]  = 3,
-        [SUPER_ROD] = 6
+        [GOOD_ROD]  = 1,
+        [SUPER_ROD] = 1
     };
 
     task->tRoundsPlayed = 0;
@@ -1982,9 +1985,9 @@ static bool32 Fishing_ChangeMinigame(struct Task *task)
 static bool32 Fishing_WaitForA(struct Task *task)
 {
     const s16 reelTimeouts[3] = {
-        [OLD_ROD]   = 36,
-        [GOOD_ROD]  = 33,
-        [SUPER_ROD] = 30
+        [OLD_ROD]   = 90,
+        [GOOD_ROD]  = 90,
+        [SUPER_ROD] = 90
     };
 
     AlignFishingAnimationFrames();
@@ -2007,27 +2010,13 @@ static bool32 Fishing_APressNoMinigame(struct Task *task)
 // Determine if we're going to play the dot game again
 static bool32 Fishing_CheckMoreDots(struct Task *task)
 {
-    const s16 moreDotsChance[][2] =
-    {
-        [OLD_ROD]   = {0, 0},
-        [GOOD_ROD]  = {40, 10},
-        [SUPER_ROD] = {70, 30}
-    };
-
     AlignFishingAnimationFrames();
-    task->tStep = FISHING_MON_ON_HOOK;
-    if (task->tRoundsPlayed < task->tMinRoundsRequired)
-    {
-        task->tStep = FISHING_INIT_DOTS;
-    }
-    else if (task->tRoundsPlayed < 2)
-    {
-        // probability of having to play another round
-        s16 probability = Random() % 100;
 
-        if (moreDotsChance[task->tFishingRod][task->tRoundsPlayed] > probability)
-            task->tStep = FISHING_INIT_DOTS;
-    }
+    if (task->tRoundsPlayed < task->tMinRoundsRequired)
+        task->tStep = FISHING_INIT_DOTS;
+    else
+        task->tStep = FISHING_MON_ON_HOOK;
+
     return FALSE;
 }
 
@@ -2171,26 +2160,26 @@ static bool32 Fishing_RollForBite(u32 rod, bool32 isStickyHold)
 
 static u32 CalculateFishingBiteOdds(u32 rod, bool32 isStickyHold)
 {
-    u32 odds;
+    s32 odds;
 
     if (rod == OLD_ROD)
         odds = FISHING_OLD_ROD_ODDS;
-    if (rod == GOOD_ROD)
+    else if (rod == GOOD_ROD)
         odds = FISHING_GOOD_ROD_ODDS;
-    if (rod == SUPER_ROD)
+    else
         odds = FISHING_SUPER_ROD_ODDS;
 
     odds -= CalculateFishingFollowerBoost();
 
     if (isStickyHold)
-    {
-        if (I_FISHING_STICKY_BOOST >= GEN_4)
-            odds -= (100 - odds);
-        else
-            odds -= FISHING_STICKY_BOOST;
-    }
+        odds = 0;
 
-    odds -= CalculateFishingProximityBoost(odds);
+    odds -= CalculateFishingProximityBoost(max(0, odds));
+
+    if (odds < 0)
+        odds = 0;
+    if (odds > 99)
+        odds = 99;
 
     return odds;
 }

@@ -61,6 +61,33 @@ Route111_WinstrateFamilysHouse_EventScript_FaceOriginalDirection::
 	release
 	end
 
+Route111_WinstrateFamilysHouse_EventScript_StoneSeller::
+	lock
+	faceplayer
+	message Route111_WinstrateFamilysHouse_Text_StoneSeller
+	waitmessage
+	pokemart Route111_WinstrateFamilysHouse_Pokemart_Stones
+	msgbox gText_PleaseComeAgain, MSGBOX_DEFAULT
+	release
+	end
+
+Route111_WinstrateFamilysHouse_Pokemart_Stones::
+.2byte ITEM_FIRE_STONE
+.2byte ITEM_WATER_STONE
+.2byte ITEM_THUNDER_STONE
+.2byte ITEM_LEAF_STONE
+.2byte ITEM_ICE_STONE
+.2byte ITEM_SUN_STONE
+.2byte ITEM_MOON_STONE
+.2byte ITEM_SHINY_STONE
+.2byte ITEM_DUSK_STONE
+.2byte ITEM_DAWN_STONE
+.2byte ITEM_NONE
+
+Route111_WinstrateFamilysHouse_Text_StoneSeller:
+.string "Evolution stones for sale!\n"
+.string "Take a look.$"
+
 Route111_WinstrateFamilysHouse_Text_MySonIsStrongerThanYou:
 	.string "You're the first TRAINER I've seen who\n"
 	.string "deploys POKéMON so masterfully.\p"

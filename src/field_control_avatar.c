@@ -27,6 +27,7 @@
 #include "script.h"
 #include "secret_base.h"
 #include "sound.h"
+#include "string_util.h"
 #include "start_menu.h"
 #include "trainer_see.h"
 #include "trainer_hill.h"
@@ -45,6 +46,7 @@ static EWRAM_DATA u16 sPrevMetatileBehavior = 0;
 
 COMMON_DATA u8 gSelectedObjectEvent = 0;
 
+static void ShowPlayerMapCoords(void);
 static void GetPlayerPosition(struct MapPosition *);
 static void GetInFrontOfPlayerPosition(struct MapPosition *);
 static u16 GetPlayerCurMetatileBehavior(int);
@@ -155,6 +157,26 @@ void FieldGetPlayerInput(struct FieldInput *input, u16 newKeys, u16 heldKeys)
     }
 }
 
+static void ShowPlayerMapCoords(void)
+{
+    s16 x, y;
+
+    PlayerGetDestCoords(&x, &y);
+
+    x -= MAP_OFFSET;
+    y -= MAP_OFFSET;
+
+    ConvertIntToDecimalStringN(gStringVar1, x, STR_CONV_MODE_LEFT_ALIGN, 3);
+    ConvertIntToDecimalStringN(gStringVar2, y, STR_CONV_MODE_LEFT_ALIGN, 3);
+
+    StringExpandPlaceholders(
+        gStringVar4,
+        COMPOUND_STRING("X: {STR_VAR_1}\nY: {STR_VAR_2}")
+    );
+
+    ShowFieldMessage(gStringVar4);
+}
+
 int ProcessPlayerFieldInput(struct FieldInput *input)
 {
     struct MapPosition position;
@@ -229,8 +251,17 @@ int ProcessPlayerFieldInput(struct FieldInput *input)
     if (input->tookStep && TryFindHiddenPokemon())
         return TRUE;
     
-    if (input->pressedSelectButton && UseRegisteredKeyItemOnField() == TRUE)
-        return TRUE;
+    if (input->pressedSelectButton)
+    {
+        if (JOY_HELD(L_BUTTON))
+        {
+            ShowPlayerMapCoords();
+            return TRUE;
+        }
+
+        if (UseRegisteredKeyItemOnField() == TRUE)
+            return TRUE;
+    }
     
     if (input->pressedRButton && TryStartDexNavSearch())
         return TRUE;
@@ -550,7 +581,8 @@ static const u8 *GetInteractedMetatileScript(struct MapPosition *position, u8 me
 
 static const u8 *GetInteractedWaterScript(struct MapPosition *unused1, u8 metatileBehavior, u8 direction)
 {
-    if (FlagGet(FLAG_BADGE05_GET) == TRUE && PartyHasMonWithSurf() == TRUE && IsPlayerFacingSurfableFishableWater() == TRUE)
+    if (FlagGet(FLAG_BADGE05_GET) == TRUE
+     && IsPlayerFacingSurfableFishableWater() == TRUE)
         return EventScript_UseSurf;
 
     if (MetatileBehavior_IsWaterfall(metatileBehavior) == TRUE)

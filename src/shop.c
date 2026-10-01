@@ -40,6 +40,7 @@
 #include "constants/metatile_behaviors.h"
 #include "constants/rgb.h"
 #include "constants/songs.h"
+#include "randomizer.h"
 
 #define TAG_SCROLL_ARROW   2100
 #define TAG_ITEM_ICON_BASE 2110
@@ -105,6 +106,10 @@ struct ShopData
     u8 itemSpriteIds[2];
     s16 viewportObjects[OBJECT_EVENTS_COUNT][5];
 };
+
+#define MAX_RANDOMIZED_TM_SHOP_ITEMS 64
+
+static u16 sRandomizedTmShopItems[MAX_RANDOMIZED_TM_SHOP_ITEMS + 1];
 
 static EWRAM_DATA struct MartInfo sMartInfo = {0};
 static EWRAM_DATA struct ShopData *sShopData = NULL;
@@ -1294,10 +1299,87 @@ static void RecordItemPurchase(u8 taskId)
 #undef tCallbackHi
 #undef tCallbackLo
 
+static const u16 *GetRandomizedTmShopItems(const u16 *itemsForSale)
+{
+#if RANDOMIZER_AVAILABLE == TRUE
+    u32 itemCount = 0;
+    u32 i;
+
+    if (!RandomizerFeatureEnabled(RANDOMIZE_FIELD_ITEMS))
+        return itemsForSale;
+
+    // Only randomize marts whose entire inventory consists of TMs.
+    while (itemsForSale[itemCount] != ITEM_NONE)
+    {
+        if (itemsForSale[itemCount] < ITEM_TM01
+         || itemsForSale[itemCount] > RANDOMIZER_MAX_TM)
+        {
+            return itemsForSale;
+        }
+
+        itemCount++;
+
+        if (itemCount >= MAX_RANDOMIZED_TM_SHOP_ITEMS)
+            return itemsForSale;
+    }
+
+    if (itemCount == 0)
+        return itemsForSale;
+
+    for (i = 0; i < itemCount; i++)
+    {
+        u32 attempt = 0;
+        u16 candidate;
+        bool32 duplicate;
+
+        do
+        {
+            u32 j;
+
+            /*
+             * The "amount" argument is used here as a deterministic salt.
+             * Each shop slot gets its own value, and retries get another
+             * stable value if two slots happen to roll the same TM.
+             */
+            candidate = RandomizeGiftItem(
+                itemsForSale[i],
+                (u16)(1 + i + attempt * MAX_RANDOMIZED_TM_SHOP_ITEMS),
+                gSaveBlock1Ptr->location.mapNum,
+                gSaveBlock1Ptr->location.mapGroup
+            );
+
+            duplicate = FALSE;
+
+            for (j = 0; j < i; j++)
+            {
+                if (sRandomizedTmShopItems[j] == candidate)
+                {
+                    duplicate = TRUE;
+                    break;
+                }
+            }
+
+            attempt++;
+        }
+        while (duplicate && attempt < 256);
+
+        sRandomizedTmShopItems[i] = candidate;
+    }
+
+    sRandomizedTmShopItems[itemCount] = ITEM_NONE;
+    return sRandomizedTmShopItems;
+#else
+    return itemsForSale;
+#endif
+}
+
+
 void CreatePokemartMenu(const u16 *itemsForSale)
 {
+    const u16 *finalItems = GetRandomizedTmShopItems(itemsForSale);
+
     CreateShopMenu(MART_TYPE_NORMAL);
-    SetShopItemsForSale(itemsForSale);
+    SetShopItemsForSale(finalItems);
     ClearItemPurchases();
     SetShopMenuCallback(ScriptContext_Enable);
 }

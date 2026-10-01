@@ -53,6 +53,9 @@ EverGrandeCity_PhoebesRoom_EventScript_PostBattleSpeech::
 
 EverGrandeCity_PhoebesRoom_EventScript_Defeated::
 	setflag FLAG_DEFEATED_ELITE_4_PHOEBE
+	checkitemspace ITEM_MAX_ELIXIR, 1
+	goto_if_eq VAR_RESULT, FALSE, Common_EventScript_ShowBagIsFull
+	additem ITEM_MAX_ELIXIR, 1
 	call PokemonLeague_EliteFour_SetAdvanceToNextRoomMetatiles
 	msgbox EverGrandeCity_PhoebesRoom_Text_PostBattleSpeech, MSGBOX_DEFAULT
 	release

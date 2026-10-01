@@ -46,6 +46,7 @@ struct EvoInfo
 
 static EWRAM_DATA struct EvoInfo *sEvoStructPtr = NULL;
 static EWRAM_DATA u16 *sBgAnimPal = NULL;
+static EWRAM_DATA struct Pokemon *sEvolutionMon = NULL;
 
 COMMON_DATA void (*gCB2_AfterEvolution)(void) = NULL;
 
@@ -53,6 +54,7 @@ COMMON_DATA void (*gCB2_AfterEvolution)(void) = NULL;
 #define sEvoGraphicsTaskId      gBattleCommunication[2]
 
 static void Task_EvolutionScene(u8 taskId);
+static void CB2_BeginEvolutionScene(void);
 static void Task_TradeEvolutionScene(u8 taskId);
 static void CB2_EvolutionSceneUpdate(void);
 static void CB2_TradeEvolutionSceneUpdate(void);
@@ -146,12 +148,6 @@ static const u8 sBgAnim_PalIndexes[][16] = {
     {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }
 };
 
-static void CB2_BeginEvolutionScene(void)
-{
-    UpdatePaletteFade();
-    RunTasks();
-}
-
 #define tState              data[0]
 #define tPreEvoSpecies      data[1]
 #define tPostEvoSpecies     data[2]
@@ -170,12 +166,14 @@ static void CB2_BeginEvolutionScene(void)
 static void Task_BeginEvolutionScene(u8 taskId)
 {
     struct Pokemon *mon = NULL;
+
     switch (gTasks[taskId].tState)
     {
     case 0:
         BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
         gTasks[taskId].tState++;
         break;
+
     case 1:
         if (!gPaletteFade.active)
         {
@@ -183,7 +181,7 @@ static void Task_BeginEvolutionScene(u8 taskId)
             bool8 canStopEvo;
             u8 partyId;
 
-            mon = &gPlayerParty[gTasks[taskId].tPartyId];
+            mon = sEvolutionMon;
             postEvoSpecies = gTasks[taskId].tPostEvoSpecies;
             canStopEvo = gTasks[taskId].tCanStop;
             partyId = gTasks[taskId].tPartyId;
@@ -195,9 +193,19 @@ static void Task_BeginEvolutionScene(u8 taskId)
     }
 }
 
+static void CB2_BeginEvolutionScene(void)
+{
+    UpdatePaletteFade();
+    RunTasks();
+}
+
 void BeginEvolutionScene(struct Pokemon *mon, u16 postEvoSpecies, bool8 canStopEvo, u8 partyId)
 {
-    u8 taskId = CreateTask(Task_BeginEvolutionScene, 0);
+    u8 taskId;
+
+    sEvolutionMon = mon;
+
+    taskId = CreateTask(Task_BeginEvolutionScene, 0);
     gTasks[taskId].tState = 0;
     gTasks[taskId].tPostEvoSpecies = postEvoSpecies;
     gTasks[taskId].tCanStop = canStopEvo;
@@ -212,6 +220,8 @@ void EvolutionScene(struct Pokemon *mon, u16 postEvoSpecies, bool8 canStopEvo, u
     u32 personality;
     bool32 isShiny;
     u8 id;
+
+    sEvolutionMon = mon;
 
     SetHBlankCallback(NULL);
     SetVBlankCallback(NULL);
@@ -312,7 +322,7 @@ static void CB2_EvolutionSceneLoadGraphics(void)
     u8 id;
     u16 postEvoSpecies;
     u32 personality;
-    struct Pokemon *mon = &gPlayerParty[gTasks[sEvoStructPtr->evoTaskId].tPartyId];
+    struct Pokemon *mon = sEvolutionMon;
     bool8 isShiny;
 
     postEvoSpecies = gTasks[sEvoStructPtr->evoTaskId].tPostEvoSpecies;
@@ -379,7 +389,7 @@ static void CB2_EvolutionSceneLoadGraphics(void)
 
 static void CB2_TradeEvolutionSceneLoadGraphics(void)
 {
-    struct Pokemon *mon = &gPlayerParty[gTasks[sEvoStructPtr->evoTaskId].tPartyId];
+    struct Pokemon *mon = sEvolutionMon;
     u16 postEvoSpecies = gTasks[sEvoStructPtr->evoTaskId].tPostEvoSpecies;
 
     switch (gMain.state)
@@ -639,7 +649,7 @@ enum {
 static void Task_EvolutionScene(u8 taskId)
 {
     u32 var;
-    struct Pokemon *mon = &gPlayerParty[gTasks[taskId].tPartyId];
+    struct Pokemon *mon = sEvolutionMon;
 
     // check if B Button was held, so the evolution gets stopped
     if (gMain.heldKeys == B_BUTTON
@@ -964,9 +974,13 @@ static void Task_EvolutionScene(u8 taskId)
             if (!gPaletteFade.active)
             {
                 FreeAllWindowBuffers();
-                ShowSelectMovePokemonSummaryScreen(gPlayerParty, gTasks[taskId].tPartyId,
-                            gPlayerPartyCount - 1, CB2_EvolutionSceneLoadGraphics,
-                            gMoveToLearn);
+                ShowSelectMovePokemonSummaryScreen(
+                    sEvolutionMon,
+                    0,
+                    0,
+                    CB2_EvolutionSceneLoadGraphics,
+                    gMoveToLearn
+                );
                 gTasks[taskId].tLearnMoveState++;
             }
             break;
@@ -1089,7 +1103,7 @@ enum {
 static void Task_TradeEvolutionScene(u8 taskId)
 {
     u32 var = 0;
-    struct Pokemon *mon = &gPlayerParty[gTasks[taskId].tPartyId];
+    struct Pokemon *mon = sEvolutionMon;
 
     switch (gTasks[taskId].tState)
     {

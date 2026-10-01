@@ -27,6 +27,7 @@
 #include "constants/abilities.h"
 #include "constants/items.h"
 #include "constants/battle_frontier.h"
+#include "randomizer.h"
 
 static void CB2_ReturnFromChooseHalfParty(void);
 static void CB2_ReturnFromChooseBattleFrontierParty(void);
@@ -65,6 +66,16 @@ u8 ScriptGiveEgg(u16 species)
 {
     struct Pokemon mon;
     u8 isEgg;
+
+    #if RANDOMIZER_AVAILABLE == TRUE
+        u16 i = 0;
+        for(i = 0; i < EGG_MON_COUNT; i++)
+        {
+            if(gEggMonTable[i] == species)
+                break;
+        }
+        species = RandomizeEggMon(i, gEggMonTable);
+    #endif
 
     CreateEgg(&mon, species, TRUE);
     isEgg = TRUE;
@@ -332,14 +343,32 @@ void SetTeraType(struct ScriptContext *ctx)
  * if side/slot are assigned, it will create the mon at the assigned party location
  * if slot == PARTY_SIZE, it will give the mon to first available party or storage slot
  */
-static u32 ScriptGiveMonParameterized(u8 side, u8 slot, u16 species, u8 level, u16 item, enum PokeBall ball, u8 nature, u8 abilityNum, u8 gender, u8 *evs, u8 *ivs, u16 *moves, bool8 isShiny, bool8 gmaxFactor, u8 teraType, u8 dmaxLevel)
+static u32 ScriptGiveMonParameterized(u8 side,u8 slot,u16 species,u8 level,u16 item,enum PokeBall ball,u8 nature,u8 abilityNum,u8 gender,u8 *evs,u8 *ivs,u16 *moves,bool8 isShiny,bool8 gmaxFactor,u8 teraType,u8 dmaxLevel,bool32 randomizeSpecies)
 {
     u16 nationalDexNum;
     int sentToPc;
     struct Pokemon mon;
     u32 i;
-    u8 genderRatio = gSpeciesInfo[species].genderRatio;
+    u8 genderRatio;
     u16 targetSpecies;
+
+    #if RANDOMIZER_AVAILABLE == TRUE
+        if (randomizeSpecies
+         && RandomizerFeatureEnabled(RANDOMIZE_STARTER_AND_GIFT_MON))
+        {
+            for (i = 0; i < STARTER_AND_GIFT_MON_COUNT; i++)
+            {
+                if (species == gStarterAndGiftMonTable[i])
+                {
+                    species = RandomizeStarterAndGiftMon(i, gStarterAndGiftMonTable);
+                    break;
+                }
+            }
+        }
+    #endif
+
+    genderRatio = gSpeciesInfo[species].genderRatio;
+    gSpecialVar_0x8004 = species;
 
     // check whether to use a specific nature or a random one
     if (nature >= NUM_NATURES)
@@ -405,11 +434,11 @@ static u32 ScriptGiveMonParameterized(u8 side, u8 slot, u16 species, u8 level, u
     {
         abilityNum = GetMonData(&mon, MON_DATA_PERSONALITY) & 1;
     }
-    else if (abilityNum > NUM_NORMAL_ABILITY_SLOTS || GetAbilityBySpecies(species, abilityNum) == ABILITY_NONE)
+    else if (abilityNum > NUM_NORMAL_ABILITY_SLOTS || GetAbilityBySpecies(species, abilityNum, FALSE) == ABILITY_NONE)
     {
         do {
             abilityNum = Random() % NUM_ABILITY_SLOTS; // includes hidden abilities
-        } while (GetAbilityBySpecies(species, abilityNum) == ABILITY_NONE);
+        } while (GetAbilityBySpecies(species, abilityNum, FALSE) == ABILITY_NONE);
     }
     SetMonData(&mon, MON_DATA_ABILITY_NUM, &abilityNum);
 
@@ -479,7 +508,47 @@ u32 ScriptGiveMon(u16 species, u8 level, u16 item)
                                 MAX_PER_STAT_IVS + 1, MAX_PER_STAT_IVS + 1, MAX_PER_STAT_IVS + 1};  // ScriptGiveMonParameterized won't touch the stats' IV.
     u16 moves[MAX_MON_MOVES] = {MOVE_NONE, MOVE_NONE, MOVE_NONE, MOVE_NONE};
 
-    return ScriptGiveMonParameterized(0, PARTY_SIZE, species, level, item, ITEM_POKE_BALL, NUM_NATURES, NUM_ABILITY_PERSONALITY, MON_GENDERLESS, evs, ivs, moves, FALSE, FALSE, NUMBER_OF_MON_TYPES, 0);
+    return ScriptGiveMonParameterized(0,PARTY_SIZE,species,level,item,ITEM_POKE_BALL,NUM_NATURES,NUM_ABILITY_PERSONALITY,MON_GENDERLESS,evs,ivs,moves,FALSE,FALSE,NUMBER_OF_MON_TYPES,0,TRUE);
+}
+
+u32 ScriptGiveMonAlreadyRandomized(u16 species, u8 level, u16 item)
+{
+    u8 evs[NUM_STATS] = {0, 0, 0, 0, 0, 0};
+    u8 ivs[NUM_STATS] =
+    {
+        MAX_PER_STAT_IVS + 1,
+        MAX_PER_STAT_IVS + 1,
+        MAX_PER_STAT_IVS + 1,
+        MAX_PER_STAT_IVS + 1,
+        MAX_PER_STAT_IVS + 1,
+        MAX_PER_STAT_IVS + 1
+    };
+    u16 moves[MAX_MON_MOVES] =
+    {
+        MOVE_NONE,
+        MOVE_NONE,
+        MOVE_NONE,
+        MOVE_NONE
+    };
+
+    return ScriptGiveMonParameterized(
+        0,
+        PARTY_SIZE,
+        species,
+        level,
+        item,
+        ITEM_POKE_BALL,
+        NUM_NATURES,
+        NUM_ABILITY_PERSONALITY,
+        MON_GENDERLESS,
+        evs,
+        ivs,
+        moves,
+        FALSE,
+        FALSE,
+        NUMBER_OF_MON_TYPES,
+        0,
+        FALSE);
 }
 
 #define PARSE_FLAG(n, default_) (flags & (1 << (n))) ? VarGet(ScriptReadHalfword(ctx)) : (default_)
@@ -566,7 +635,111 @@ void ScrCmd_createmon(struct ScriptContext *ctx)
     else
         Script_RequestEffects(SCREFF_V1);
 
-    gSpecialVar_Result = ScriptGiveMonParameterized(side, slot, species, level, item, ball, nature, abilityNum, gender, evs, ivs, moves, isShiny, gmaxFactor, teraType, dmaxLevel);
+    gSpecialVar_Result = ScriptGiveMonParameterized(
+        side, slot, species, level, item, ball, nature, abilityNum, gender,
+        evs, ivs, moves, isShiny, gmaxFactor, teraType, dmaxLevel,
+        TRUE
+    );
+}
+
+void ScrCmd_createmonrandom(struct ScriptContext *ctx)
+{
+    u8 side           = ScriptReadByte(ctx);
+    u8 slot           = ScriptReadByte(ctx);
+    u16 species       = VarGet(ScriptReadHalfword(ctx));
+    u8 level          = VarGet(ScriptReadHalfword(ctx));
+
+    #if RANDOMIZER_AVAILABLE == TRUE
+        u16 j;
+
+        for (j = 0; j < STARTER_AND_GIFT_MON_COUNT; j++)
+        {
+            if (gStarterAndGiftMonTable[j] == species)
+            {
+                species = RandomizeStarterAndGiftMon(j, gStarterAndGiftMonTable);
+                break;
+            }
+        }
+    #endif
+
+    u32 flags         = ScriptReadWord(ctx);
+    u16 item          = PARSE_FLAG(0, ITEM_NONE);
+    u8 ball           = PARSE_FLAG(1, ITEM_POKE_BALL);
+    u8 nature         = PARSE_FLAG(2, NUM_NATURES);
+    u8 abilityNum     = PARSE_FLAG(3, NUM_ABILITY_PERSONALITY);
+    u8 gender         = PARSE_FLAG(4, MON_GENDERLESS); // TODO: Find a better way to assign a random gender.
+    u8 hpEv           = PARSE_FLAG(5, 0);
+    u8 atkEv          = PARSE_FLAG(6, 0);
+    u8 defEv          = PARSE_FLAG(7, 0);
+    u8 speedEv        = PARSE_FLAG(8, 0);
+    u8 spAtkEv        = PARSE_FLAG(9, 0);
+    u8 spDefEv        = PARSE_FLAG(10, 0);
+    u8 hpIv           = Random() % (MAX_PER_STAT_IVS + 1);
+    u8 atkIv          = Random() % (MAX_PER_STAT_IVS + 1);
+    u8 defIv          = Random() % (MAX_PER_STAT_IVS + 1);
+    u8 speedIv        = Random() % (MAX_PER_STAT_IVS + 1);
+    u8 spAtkIv        = Random() % (MAX_PER_STAT_IVS + 1);
+    u8 spDefIv        = Random() % (MAX_PER_STAT_IVS + 1);
+
+    // Perfect IV calculation
+    u32 i;
+    u8 availableIVs[NUM_STATS];
+    u8 selectedIvs[NUM_STATS];
+    if (gSpeciesInfo[species].perfectIVCount != 0)
+    {
+        // Initialize a list of IV indices.
+        for (i = 0; i < NUM_STATS; i++)
+            availableIVs[i] = i;
+
+        // Select the IVs that will be perfected.
+        for (i = 0; i < NUM_STATS && i < gSpeciesInfo[species].perfectIVCount; i++)
+        {
+            u8 index = Random() % (NUM_STATS - i);
+            selectedIvs[i] = availableIVs[index];
+            RemoveIVIndexFromList(availableIVs, index);
+        }
+        for (i = 0; i < NUM_STATS && i < gSpeciesInfo[species].perfectIVCount; i++)
+        {
+            switch (selectedIvs[i])
+            {
+            case STAT_HP:    hpIv    = MAX_PER_STAT_IVS; break;
+            case STAT_ATK:   atkIv   = MAX_PER_STAT_IVS; break;
+            case STAT_DEF:   defIv   = MAX_PER_STAT_IVS; break;
+            case STAT_SPEED: speedIv = MAX_PER_STAT_IVS; break;
+            case STAT_SPATK: spAtkIv = MAX_PER_STAT_IVS; break;
+            case STAT_SPDEF: spDefIv = MAX_PER_STAT_IVS; break;
+            }
+        }
+    }
+    hpIv              = PARSE_FLAG(11, hpIv);
+    atkIv             = PARSE_FLAG(12, atkIv);
+    defIv             = PARSE_FLAG(13, defIv);
+    speedIv           = PARSE_FLAG(14, speedIv);
+    spAtkIv           = PARSE_FLAG(15, spAtkIv);
+    spDefIv           = PARSE_FLAG(16, spDefIv);
+    u16 move1         = PARSE_FLAG(17, MOVE_NONE);
+    u16 move2         = PARSE_FLAG(18, MOVE_NONE);
+    u16 move3         = PARSE_FLAG(19, MOVE_NONE);
+    u16 move4         = PARSE_FLAG(20, MOVE_NONE);
+    bool8 isShiny     = PARSE_FLAG(21, FALSE);
+    bool8 gmaxFactor  = PARSE_FLAG(22, FALSE);
+    u8 teraType       = PARSE_FLAG(23, NUMBER_OF_MON_TYPES);
+    u8 dmaxLevel      = PARSE_FLAG(24, 0);
+
+    u8 evs[NUM_STATS]        = {hpEv, atkEv, defEv, speedEv, spAtkEv, spDefEv};
+    u8 ivs[NUM_STATS]        = {hpIv, atkIv, defIv, speedIv, spAtkIv, spDefIv};
+    u16 moves[MAX_MON_MOVES] = {move1, move2, move3, move4};
+
+    if (side == 0)
+        Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
+    else
+        Script_RequestEffects(SCREFF_V1);
+
+    gSpecialVar_Result = ScriptGiveMonParameterized(
+        side, slot, species, level, item, ball, nature, abilityNum, gender,
+        evs, ivs, moves, isShiny, gmaxFactor, teraType, dmaxLevel,
+        FALSE
+    );
 }
 
 #undef PARSE_FLAG

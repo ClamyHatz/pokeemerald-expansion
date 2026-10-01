@@ -96,6 +96,11 @@ SootopolisCity_Gym_1F_EventScript_JuanDefeated::
 	msgbox SootopolisCity_Gym_1F_Text_ExplainRainBadgeTakeThis, MSGBOX_DEFAULT
 	setflag FLAG_DEFEATED_SOOTOPOLIS_GYM
 	setflag FLAG_BADGE08_GET
+	setflag FLAG_REGI_DOORS_OPENED
+	setflag FLAG_SYS_REGIROCK_PUZZLE_COMPLETED
+	setflag FLAG_SYS_BRAILLE_REGICE_COMPLETED
+	setflag FLAG_SYS_REGISTEEL_PUZZLE_COMPLETED
+	setflag FLAG_HIDE_SOOTOPOLIS_CITY_RESIDENTS
 	setflag FLAG_HIDE_SOOTOPOLIS_CITY_RESIDENTS
 	setflag FLAG_HIDE_SOOTOPOLIS_CITY_STEVEN
 	setflag FLAG_HIDE_SOOTOPOLIS_CITY_WALLACE
@@ -104,6 +109,9 @@ SootopolisCity_Gym_1F_EventScript_JuanDefeated::
 	setvar VAR_0x8008, 8
 	call Common_EventScript_SetGymTrainers
 	call SootopolisCity_Gym_1F_EventScript_GiveWaterPulse
+	additem ITEM_MASTER_BALL
+	goto_if_eq VAR_RESULT, FALSE, Common_EventScript_BagIsFull
+	msgbox SootopolisCity_Gym_1F_Text_ReceivedMasterBall, MSGBOX_DEFAULT
 	closemessage
 	delay 30
 	playfanfare MUS_REGISTER_MATCH_CALL
@@ -174,6 +182,9 @@ SootopolisCity_Gym_1F_EventScript_GymStatue::
 	msgbox SootopolisCity_Gym_1F_Text_GymStatue, MSGBOX_DEFAULT
 	releaseall
 	end
+
+SootopolisCity_Gym_1F_Text_ReceivedMasterBall:
+	.string "JUAN handed you a MASTER BALL!$"
 
 SootopolisCity_Gym_1F_Text_GymGuideAdvice:
 	.string "Yo! How's it going, CHAMPION-\n"

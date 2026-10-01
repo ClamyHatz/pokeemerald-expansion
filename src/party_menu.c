@@ -78,6 +78,8 @@
 
 enum {
     MENU_SUMMARY,
+    MENU_LEVEL_TO_CAP,
+    MENU_EVOLVE,
     MENU_SWITCH,
     MENU_CANCEL1,
     MENU_ITEM,
@@ -271,6 +273,7 @@ static void LoadPartyMenuBoxes(u8);
 static void LoadPartyMenuPokeballGfx(void);
 static bool8 CreatePartyMonSpritesLoop(void);
 static bool8 RenderPartyMenuBoxes(void);
+static void Task_WaitForLevelCapMessage(u8 taskId);
 static void CreateCancelConfirmPokeballSprites(void);
 static void CreateCancelConfirmWindows(u8);
 static void Task_ExitPartyMenu(u8);
@@ -328,7 +331,7 @@ static void HandleChooseMonSelection(u8, s8 *);
 static u16 PartyMenuButtonHandler(s8 *);
 static s8 *GetCurrentPartySlotPtr(void);
 static bool8 IsSelectedMonNotEgg(u8 *);
-static bool8 DoesSelectedMonKnowHM(u8 *);
+//static bool8 DoesSelectedMonKnowHM(u8 *);
 static void PartyMenuRemoveWindow(u8 *);
 static void CB2_SetUpExitToBattleScreen(void);
 static void Task_ClosePartyMenuAfterText(u8);
@@ -482,6 +485,8 @@ static void ShiftMoveSlot(struct Pokemon *, u8, u8);
 static void BlitBitmapToPartyWindow_LeftColumn(u8, u8, u8, u8, u8, bool8);
 static void BlitBitmapToPartyWindow_RightColumn(u8, u8, u8, u8, u8, bool8);
 static void CursorCb_Summary(u8);
+static void CursorCb_LevelToCap(u8);
+static void CursorCb_Evolve(u8);
 static void CursorCb_Switch(u8);
 static void CursorCb_Cancel1(u8);
 static void CursorCb_Item(u8);
@@ -979,6 +984,16 @@ static void LoadPartyMenuBoxes(u8 layout)
         sPartyMenuBoxes[3].infoRects = &sPartyBoxInfoRects[PARTY_BOX_LEFT_COLUMN];
     else if (layout != PARTY_LAYOUT_SINGLE)
         sPartyMenuBoxes[1].infoRects = &sPartyBoxInfoRects[PARTY_BOX_LEFT_COLUMN];
+}
+
+static void Task_WaitForLevelCapMessage(u8 taskId)
+{
+    if (IsPartyMenuTextPrinterActive() != TRUE
+     && (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON)))
+    {
+        PlaySE(SE_SELECT);
+        Task_ReturnToChooseMonAfterText(taskId);
+    }
 }
 
 static void RenderPartyMenuBox(u8 slot)
@@ -1542,13 +1557,6 @@ static void HandleChooseMonSelection(u8 taskId, s8 *slotPtr)
                 // Can't select if mon is currently on the field, or doesn't belong to you
                 PlaySE(SE_FAILURE);
             }
-            else if (DoesSelectedMonKnowHM((u8 *)slotPtr))
-            {
-                PlaySE(SE_FAILURE);
-                DisplayPartyMenuMessage(gText_CannotSendMonToBoxHM, FALSE);
-                ScheduleBgCopyTilemapToVram(2);
-                gTasks[taskId].func = Task_ReturnToChooseMonAfterText;
-            }
             else
             {
                 PlaySE(SE_SELECT);
@@ -1577,6 +1585,7 @@ static bool8 IsSelectedMonNotEgg(u8 *slotPtr)
     return TRUE;
 }
 
+/*
 static bool8 DoesSelectedMonKnowHM(u8 *slotPtr)
 {
     if (B_CATCH_SWAP_CHECK_HMS == FALSE)
@@ -1595,6 +1604,7 @@ static bool8 DoesSelectedMonKnowHM(u8 *slotPtr)
     }
     return FALSE;
 }
+*/
 
 static void HandleChooseMonCancel(u8 taskId, s8 *slotPtr)
 {
@@ -2199,6 +2209,33 @@ static bool16 IsMonAllowedInPokemonJump(struct Pokemon *mon)
     return FALSE;
 }
 
+static void CursorCb_Evolve(u8 taskId)
+{
+    struct Pokemon *mon = &gPlayerParty[gPartyMenu.slotId];
+    u16 targetSpecies;
+
+    PlaySE(SE_SELECT);
+
+    targetSpecies = GetPartyMenuEvolutionTarget(mon);
+
+    if (targetSpecies == SPECIES_NONE)
+    {
+        Task_ReturnToChooseMonAfterText(taskId);
+        return;
+    }
+
+    FreePartyPointers();
+    gCB2_AfterEvolution = gPartyMenu.exitCallback;
+
+    BeginEvolutionScene(
+        mon,
+        targetSpecies,
+        TRUE,
+        gPartyMenu.slotId
+    );
+
+    DestroyTask(taskId);
+}
 
 static bool16 IsMonAllowedInDodrioBerryPicking(struct Pokemon *mon)
 {
@@ -2526,6 +2563,9 @@ static void DisplayPartyPokemonLevelCheck(struct Pokemon *mon, struct PartyMenuB
     }
 }
 
+static const u8 sText_AlreadyAtLevelCap[] =
+    _("Already at the current level cap.");
+
 static void DisplayPartyPokemonLevel(u8 level, struct PartyMenuBox *menuBox)
 {
     ConvertIntToDecimalStringN(gStringVar2, level, STR_CONV_MODE_LEFT_ALIGN, 3);
@@ -2683,8 +2723,10 @@ static void PartyMenuRemoveWindow(u8 *ptr)
     if (*ptr != WINDOW_NONE)
     {
         ClearStdWindowAndFrameToTransparent(*ptr, FALSE);
+        ClearWindowTilemap(*ptr);
         RemoveWindow(*ptr);
         *ptr = WINDOW_NONE;
+
         ScheduleBgCopyTilemapToVram(2);
     }
 }
@@ -2835,8 +2877,17 @@ static u8 CreateLevelUpStatsWindow(void)
 
 static void RemoveLevelUpStatsWindow(void)
 {
-    ClearWindowTilemap(sPartyMenuInternal->windowId[0]);
-    PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[0]);
+    u8 windowId = sPartyMenuInternal->windowId[0];
+
+    if (windowId != WINDOW_NONE)
+    {
+        ClearStdWindowAndFrameToTransparent(windowId, TRUE);
+        ClearWindowTilemap(windowId);
+        RemoveWindow(windowId);
+        sPartyMenuInternal->windowId[0] = WINDOW_NONE;
+
+        ScheduleBgCopyTilemapToVram(2);
+    }
 }
 
 static void SetPartyMonSelectionActions(struct Pokemon *mons, u8 slotId, u8 action)
@@ -2858,9 +2909,33 @@ static void SetPartyMonSelectionActions(struct Pokemon *mons, u8 slotId, u8 acti
 static void SetPartyMonFieldSelectionActions(struct Pokemon *mons, u8 slotId)
 {
     u8 i, j;
+    struct Pokemon *mon = &mons[slotId];
 
     sPartyMenuInternal->numActions = 0;
-    AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, MENU_SUMMARY);
+
+    AppendToList(
+        sPartyMenuInternal->actions,
+        &sPartyMenuInternal->numActions,
+        MENU_SUMMARY
+    );
+
+    if (GetMonData(mon, MON_DATA_LEVEL) < GetCurrentLevelCap())
+    {
+        AppendToList(
+            sPartyMenuInternal->actions,
+            &sPartyMenuInternal->numActions,
+            MENU_LEVEL_TO_CAP
+        );
+    }
+
+    if (CanPartyMenuEvolve(mon))
+    {
+        AppendToList(
+            sPartyMenuInternal->actions,
+            &sPartyMenuInternal->numActions,
+            MENU_EVOLVE
+        );
+    }
 
     // Add field moves to action list
     for (i = 0; i < MAX_MON_MOVES; i++)
@@ -3007,14 +3082,14 @@ static void Task_HandleSelectionMenuInput(u8 taskId)
             break;
         case MENU_B_PRESSED:
             PlaySE(SE_SELECT);
-            PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[2]);
+            PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[0]);
             if (sPartyMenuInternal->actions[sPartyMenuInternal->numActions - 1] >= MENU_FIELD_MOVES)
                 CursorCb_FieldMove(taskId);
             else
                 sCursorOptions[sPartyMenuInternal->actions[sPartyMenuInternal->numActions - 1]].func(taskId);
             break;
         default:
-            PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[2]);
+            PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[0]);
             if (sPartyMenuInternal->actions[input] >= MENU_FIELD_MOVES)
                 CursorCb_FieldMove(taskId);
             else
@@ -3029,6 +3104,64 @@ static void CursorCb_Summary(u8 taskId)
     PlaySE(SE_SELECT);
     sPartyMenuInternal->exitCallback = CB2_ShowPokemonSummaryScreen;
     Task_ClosePartyMenu(taskId);
+}
+
+static void CursorCb_LevelToCap(u8 taskId)
+{
+    struct Pokemon *mon = &gPlayerParty[gPartyMenu.slotId];
+    u16 species = GetMonData(mon, MON_DATA_SPECIES);
+    u8 currentLevel = GetMonData(mon, MON_DATA_LEVEL);
+    u32 levelCap = GetCurrentLevelCap();
+    u32 exp;
+
+    PlaySE(SE_SELECT);
+
+    if (currentLevel >= levelCap)
+    {
+        // Close the Pokémon action menu before displaying the message.
+        PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[0]);
+
+        DisplayPartyMenuMessage(sText_AlreadyAtLevelCap, TRUE);
+        ScheduleBgCopyTilemapToVram(2);
+
+        // Wait for A/B before returning to the party screen.
+        gTasks[taskId].func = Task_WaitForLevelCapMessage;
+        return;
+    }
+
+    // Save the old stats for the normal level-up comparison screen.
+    BufferMonStatsToTaskData(mon, sPartyMenuInternal->data);
+
+    sInitialLevel = currentLevel;
+    sFinalLevel = levelCap;
+
+    // Set EXP directly to the current cap.
+    exp = gExperienceTables[gSpeciesInfo[species].growthRate][levelCap];
+    SetMonData(mon, MON_DATA_EXP, &exp);
+    CalculateMonStats(mon);
+
+    // Save the new stats.
+    BufferMonStatsToTaskData(mon, &sPartyMenuInternal->data[NUM_STATS]);
+
+    UpdateMonDisplayInfoAfterRareCandy(gPartyMenu.slotId, mon);
+
+    GetMonNickname(mon, gStringVar1);
+    ConvertIntToDecimalStringN(
+        gStringVar2,
+        levelCap,
+        STR_CONV_MODE_LEFT_ALIGN,
+        3
+    );
+    StringExpandPlaceholders(
+        gStringVar4,
+        gText_PkmnElevatedToLvVar2
+    );
+
+    PlayFanfareByFanfareNum(FANFARE_LEVEL_UP);
+    DisplayPartyMenuMessage(gStringVar4, TRUE);
+    ScheduleBgCopyTilemapToVram(2);
+
+    gTasks[taskId].func = Task_DisplayLevelUpStatsPg1;
 }
 
 static void CB2_ShowPokemonSummaryScreen(void)
@@ -4786,7 +4919,7 @@ void Task_AbilityCapsule(u8 taskId)
         }
         gPartyMenuUseExitCallback = TRUE;
         GetMonNickname(&gPlayerParty[tMonId], gStringVar1);
-        StringCopy(gStringVar2, gAbilitiesInfo[GetAbilityBySpecies(tSpecies, tAbilityNum)].name);
+        StringCopy(gStringVar2, gAbilitiesInfo[GetAbilityBySpecies(tSpecies, tAbilityNum, FALSE)].name);
         StringExpandPlaceholders(gStringVar4, askText);
         PlaySE(SE_SELECT);
         DisplayPartyMenuMessage(gStringVar4, 1);
@@ -4873,7 +5006,7 @@ void Task_AbilityPatch(u8 taskId)
         }
         gPartyMenuUseExitCallback = TRUE;
         GetMonNickname(&gPlayerParty[tMonId], gStringVar1);
-        StringCopy(gStringVar2, gAbilitiesInfo[GetAbilityBySpecies(tSpecies, tAbilityNum)].name);
+        StringCopy(gStringVar2, gAbilitiesInfo[GetAbilityBySpecies(tSpecies, tAbilityNum, FALSE)].name);
         StringExpandPlaceholders(gStringVar4, askText);
         PlaySE(SE_SELECT);
         DisplayPartyMenuMessage(gStringVar4, 1);

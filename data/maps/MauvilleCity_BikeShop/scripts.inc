@@ -4,96 +4,51 @@ MauvilleCity_BikeShop_MapScripts::
 MauvilleCity_BikeShop_EventScript_Rydel::
 	lock
 	faceplayer
-	goto_if_set FLAG_RECEIVED_BIKE, MauvilleCity_BikeShop_EventScript_AskSwitchBikes
-	goto_if_set FLAG_DECLINED_BIKE, MauvilleCity_BikeShop_EventScript_SkipGreeting
-	msgbox MauvilleCity_BikeShop_Text_RydelGreeting, MSGBOX_DEFAULT
-	msgbox MauvilleCity_BikeShop_Text_DidYouComeFromFarAway, MSGBOX_YESNO
-	goto_if_eq VAR_RESULT, YES, MauvilleCity_BikeShop_EventScript_YesFar
-	goto_if_eq VAR_RESULT, NO, MauvilleCity_BikeShop_EventScript_NotFar
+	goto_if_set FLAG_RECEIVED_BIKE, MauvilleCity_BikeShop_EventScript_AlreadyClaimed
+
+	@ Choice 1
+	setvar VAR_0x8000, ITEM_POTION
+	setvar VAR_0x8001, 1
+	callnative GiftItemRandomize_NativeCall
+	copyvar VAR_TEMP_0, VAR_0x8000
+
+	@ Choice 2
+	setvar VAR_0x8000, ITEM_ANTIDOTE
+	setvar VAR_0x8001, 1
+	callnative GiftItemRandomize_NativeCall
+	copyvar VAR_TEMP_1, VAR_0x8000
+
+	bufferitemname STR_VAR_1, VAR_TEMP_0
+	bufferitemname STR_VAR_2, VAR_TEMP_1
+
+	msgbox MauvilleCity_BikeShop_Text_RandomItemChoice, MSGBOX_YESNO
+	goto_if_eq VAR_RESULT, YES, MauvilleCity_BikeShop_EventScript_GiveRandomItem1
+	goto MauvilleCity_BikeShop_EventScript_GiveRandomItem2
 	end
 
-MauvilleCity_BikeShop_EventScript_SkipGreeting::
-	msgbox MauvilleCity_BikeShop_Text_DidYouComeFromFarAway, MSGBOX_YESNO
-	goto_if_eq VAR_RESULT, YES, MauvilleCity_BikeShop_EventScript_YesFar
-	goto_if_eq VAR_RESULT, NO, MauvilleCity_BikeShop_EventScript_NotFar
-	end
-
-MauvilleCity_BikeShop_EventScript_ChooseBike::
-	message MauvilleCity_BikeShop_Text_ExplainBikesChooseWhichOne
-	waitmessage
-	multichoice 21, 8, MULTI_BIKE, TRUE
-	switch VAR_RESULT
-	case 0, MauvilleCity_BikeShop_EventScript_GetMachBike
-	case 1, MauvilleCity_BikeShop_EventScript_GetAcroBike
-	end
-
-MauvilleCity_BikeShop_EventScript_NotFar::
-	setflag FLAG_DECLINED_BIKE
-	msgbox MauvilleCity_BikeShop_Text_GuessYouDontNeedBike, MSGBOX_DEFAULT
-	release
-	end
-
-MauvilleCity_BikeShop_EventScript_YesFar::
+MauvilleCity_BikeShop_EventScript_GiveRandomItem1::
+	checkitemspace VAR_TEMP_0, 1
+	goto_if_eq VAR_RESULT, FALSE, Common_EventScript_ShowBagIsFull
+	additem VAR_TEMP_0, 1
 	setflag FLAG_RECEIVED_BIKE
-	goto MauvilleCity_BikeShop_EventScript_ChooseBike
+	bufferitemname STR_VAR_1, VAR_TEMP_0
+	msgbox MauvilleCity_BikeShop_Text_GotRandomItem, MSGBOX_DEFAULT
+	release
 	end
 
-MauvilleCity_BikeShop_EventScript_GetMachBike::
-	msgbox MauvilleCity_BikeShop_Text_ChoseMachBike, MSGBOX_DEFAULT
-	giveitem ITEM_MACH_BIKE
+MauvilleCity_BikeShop_EventScript_GiveRandomItem2::
+	checkitemspace VAR_TEMP_1, 1
 	goto_if_eq VAR_RESULT, FALSE, Common_EventScript_ShowBagIsFull
-	goto MauvilleCity_BikeShop_EventScript_ComeBackToSwitchBikes
-	end
-
-MauvilleCity_BikeShop_EventScript_GetAcroBike::
-	msgbox MauvilleCity_BikeShop_Text_ChoseAcroBike, MSGBOX_DEFAULT
-	giveitem ITEM_ACRO_BIKE
-	goto_if_eq VAR_RESULT, FALSE, Common_EventScript_ShowBagIsFull
-	goto MauvilleCity_BikeShop_EventScript_ComeBackToSwitchBikes
-	end
-
-MauvilleCity_BikeShop_EventScript_ComeBackToSwitchBikes::
-	msgbox MauvilleCity_BikeShop_Text_ComeBackToSwitchBikes, MSGBOX_DEFAULT
-	special SwapRegisteredBike
+	additem VAR_TEMP_1, 1
+	setflag FLAG_RECEIVED_BIKE
+	bufferitemname STR_VAR_1, VAR_TEMP_1
+	msgbox MauvilleCity_BikeShop_Text_GotRandomItem, MSGBOX_DEFAULT
 	release
 	end
 
-MauvilleCity_BikeShop_EventScript_AskSwitchBikes::
-	msgbox MauvilleCity_BikeShop_Text_WantToSwitchBikes, MSGBOX_YESNO
-	goto_if_eq VAR_RESULT, YES, MauvilleCity_BikeShop_EventScript_SwitchBikes
-	goto_if_eq VAR_RESULT, NO, MauvilleCity_BikeShop_EventScript_KeepBike
-	end
-
-@ If the player does not have a bike on them Rydel assumes its stored in the PC
-MauvilleCity_BikeShop_EventScript_SwitchBikes::
-	msgbox MauvilleCity_BikeShop_Text_IllSwitchBikes, MSGBOX_DEFAULT
-	checkitem ITEM_ACRO_BIKE
-	goto_if_eq VAR_RESULT, TRUE, MauvilleCity_BikeShop_EventScript_SwitchAcroForMach
-	checkitem ITEM_MACH_BIKE
-	goto_if_eq VAR_RESULT, TRUE, MauvilleCity_BikeShop_EventScript_SwitchMachForAcro
-	msgbox MauvilleCity_BikeShop_Text_OhYourBikeIsInPC, MSGBOX_DEFAULT
+MauvilleCity_BikeShop_EventScript_AlreadyClaimed::
+	msgbox MauvilleCity_BikeShop_Text_AlreadyClaimed, MSGBOX_DEFAULT
 	release
-	end
-
-MauvilleCity_BikeShop_EventScript_KeepBike::
-	msgbox MauvilleCity_BikeShop_Text_HappyYouLikeIt, MSGBOX_DEFAULT
-	release
-	end
-
-MauvilleCity_BikeShop_EventScript_SwitchAcroForMach::
-	incrementgamestat GAME_STAT_TRADED_BIKES
-	msgbox MauvilleCity_BikeShop_Text_ExchangedAcroForMach, MSGBOX_DEFAULT
-	removeitem ITEM_ACRO_BIKE
-	giveitem ITEM_MACH_BIKE
-	goto MauvilleCity_BikeShop_EventScript_ComeBackToSwitchBikes
-	end
-
-MauvilleCity_BikeShop_EventScript_SwitchMachForAcro::
-	incrementgamestat GAME_STAT_TRADED_BIKES
-	msgbox MauvilleCity_BikeShop_Text_ExchangedMachForAcro, MSGBOX_DEFAULT
-	removeitem ITEM_MACH_BIKE
-	giveitem ITEM_ACRO_BIKE
-	goto MauvilleCity_BikeShop_EventScript_ComeBackToSwitchBikes
 	end
 
 MauvilleCity_BikeShop_EventScript_Assistant::
@@ -186,6 +141,20 @@ MauvilleCity_BikeShop_Text_DidYouComeFromFarAway:
 	.string "RYDEL: Your RUNNING SHOES…\n"
 	.string "They're awfully filthy.\p"
 	.string "Did you come from far away?$"
+
+MauvilleCity_BikeShop_Text_RandomItemChoice:
+	.string "RYDEL: You've already got both of my\n"
+	.string "BIKES, so how about a little bonus?\p"
+	.string "I can give you either a\n"
+	.string "{STR_VAR_1} or a {STR_VAR_2}.\p"
+	.string "Want the {STR_VAR_1}?$"
+
+MauvilleCity_BikeShop_Text_GotRandomItem:
+	.string "{PLAYER} received the {STR_VAR_1}!$"
+
+MauvilleCity_BikeShop_Text_AlreadyClaimed:
+	.string "RYDEL: Enjoy those BIKES!\n"
+	.string "And take good care of that prize!$"
 
 MauvilleCity_BikeShop_Text_GuessYouDontNeedBike:
 	.string "RYDEL: Is that right?\p"

@@ -17,6 +17,7 @@
 #include "battle_gimmick.h"
 #include "berry.h"
 #include "bg.h"
+#include "caps.h"
 #include "data.h"
 #include "debug.h"
 #include "decompress.h"
@@ -74,6 +75,7 @@
 #include "constants/trainers.h"
 #include "constants/weather.h"
 #include "cable_club.h"
+#include "randomizer.h"
 
 extern const struct BgTemplate gBattleBgTemplates[];
 extern const struct WindowTemplate *const gBattleWindowTemplates[];
@@ -1853,11 +1855,199 @@ void CustomTrainerPartyAssignMoves(struct Pokemon *mon, const struct TrainerMon 
     }
 }
 
-u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer *trainer, bool32 firstTrainer, u32 battleTypeFlags)
+static u32 GetTrainerHistoricalLevelCap(u16 trainerId)
+{
+    u16 mapSec = gMapHeader.regionMapSectionId;
+    u16 currentMap = (gSaveBlock1Ptr->location.mapGroup << 8)
+                   | gSaveBlock1Ptr->location.mapNum;
+
+    if (currentMap == MAP_PETALBURG_CITY_GYM)
+        return 31;
+
+    // Route 111 is one map but spans several progression stages.
+    if (mapSec == MAPSEC_ROUTE_111)
+    {
+        switch (trainerId)
+        {
+        // South Route 111 / Winstrates: before Wattson.
+        case TRAINER_VICTOR:
+        case TRAINER_VICTORIA:
+        case TRAINER_VIVI:
+        case TRAINER_VICKY:
+            return 24;
+
+        // Mid / north Route 111, reached during the Flannery arc.
+        case TRAINER_DREW:
+        case TRAINER_HEIDI:
+        case TRAINER_BEAU:
+        case TRAINER_BECKY:
+        case TRAINER_DUSTY_1:
+        case TRAINER_TRAVIS:
+        case TRAINER_IRENE:
+        case TRAINER_WILTON_1:
+        case TRAINER_BROOKE_1:
+        case TRAINER_HAYDEN:
+        case TRAINER_BIANCA:
+        case TRAINER_TYRON:
+        case TRAINER_CELINA:
+        case TRAINER_CELIA:
+        case TRAINER_BRYAN:
+        case TRAINER_BRANDEN:
+            return 29;
+
+        // Desert-side trainer(s), available after Flannery.
+        case TRAINER_DAISUKE:
+            return 31;
+
+        default:
+            return 29;
+        }
+    }
+
+    switch (mapSec)
+    {
+    // =========================
+    // PRE-ROXANNE
+    // CAP 15
+    // =========================
+    case MAPSEC_LITTLEROOT_TOWN:
+    case MAPSEC_OLDALE_TOWN:
+    case MAPSEC_PETALBURG_CITY:
+    case MAPSEC_RUSTBORO_CITY:
+    case MAPSEC_ROUTE_101:
+    case MAPSEC_ROUTE_102:
+    case MAPSEC_ROUTE_103:
+    case MAPSEC_ROUTE_104:
+    case MAPSEC_ROUTE_116:
+    case MAPSEC_PETALBURG_WOODS:
+    case MAPSEC_RUSTURF_TUNNEL:
+        return 15;
+
+    // =========================
+    // AFTER ROXANNE
+    // CAP 19
+    // =========================
+    case MAPSEC_DEWFORD_TOWN:
+    case MAPSEC_SLATEPORT_CITY:
+    case MAPSEC_ROUTE_105:
+    case MAPSEC_ROUTE_106:
+    case MAPSEC_ROUTE_107:
+    case MAPSEC_ROUTE_108:
+    case MAPSEC_ROUTE_109:
+    case MAPSEC_GRANITE_CAVE:
+        return 19;
+
+    // =========================
+    // AFTER BRAWLY
+    // CAP 24
+    // =========================
+    case MAPSEC_MAUVILLE_CITY:
+    case MAPSEC_VERDANTURF_TOWN:
+    case MAPSEC_ROUTE_110:
+    case MAPSEC_ROUTE_117:
+        return 24;
+
+    // =========================
+    // AFTER WATTSON
+    // CAP 29
+    // =========================
+    case MAPSEC_LAVARIDGE_TOWN:
+    case MAPSEC_FALLARBOR_TOWN:
+    case MAPSEC_ROUTE_112:
+    case MAPSEC_ROUTE_113:
+    case MAPSEC_ROUTE_114:
+    case MAPSEC_ROUTE_115:
+    case MAPSEC_MT_CHIMNEY:
+    case MAPSEC_METEOR_FALLS:
+    case MAPSEC_METEOR_FALLS2:
+    case MAPSEC_FIERY_PATH:
+    case MAPSEC_FIERY_PATH2:
+    case MAPSEC_JAGGED_PASS:
+    case MAPSEC_JAGGED_PASS2:
+        return 29;
+
+    // =========================
+    // AFTER FLANNERY
+    // CAP 31
+    // =========================
+    // Most of this stage is backtracking to Norman.
+    // Route 111 desert is handled above by trainer ID.
+    case MAPSEC_DESERT_RUINS:
+        return 31;
+
+    // =========================
+    // AFTER NORMAN
+    // CAP 33
+    // =========================
+    case MAPSEC_FORTREE_CITY:
+    case MAPSEC_ROUTE_118:
+    case MAPSEC_ROUTE_119:
+    case MAPSEC_NEW_MAUVILLE:
+    case MAPSEC_ABANDONED_SHIP:
+        return 33;
+
+    // =========================
+    // AFTER WINONA
+    // CAP 42
+    // =========================
+    case MAPSEC_LILYCOVE_CITY:
+    case MAPSEC_MOSSDEEP_CITY:
+    case MAPSEC_ROUTE_120:
+    case MAPSEC_ROUTE_121:
+    case MAPSEC_ROUTE_122:
+    case MAPSEC_ROUTE_123:
+    case MAPSEC_ROUTE_124:
+    case MAPSEC_MT_PYRE:
+    case MAPSEC_AQUA_HIDEOUT_OLD:
+    case MAPSEC_SAFARI_ZONE:
+    case MAPSEC_SHOAL_CAVE:
+        return 42;
+
+    // =========================
+    // AFTER TATE & LIZA
+    // CAP 50
+    // =========================
+    case MAPSEC_SOOTOPOLIS_CITY:
+    case MAPSEC_ROUTE_125:
+    case MAPSEC_ROUTE_126:
+    case MAPSEC_ROUTE_127:
+    case MAPSEC_ROUTE_128:
+    case MAPSEC_UNDERWATER_124:
+    case MAPSEC_UNDERWATER_126:
+    case MAPSEC_UNDERWATER_127:
+    case MAPSEC_UNDERWATER_128:
+    case MAPSEC_UNDERWATER_SOOTOPOLIS:
+    case MAPSEC_SEAFLOOR_CAVERN:
+    case MAPSEC_UNDERWATER_SEAFLOOR_CAVERN:
+    case MAPSEC_CAVE_OF_ORIGIN:
+    case MAPSEC_ROUTE_129:
+    case MAPSEC_ROUTE_130:
+    case MAPSEC_ROUTE_131:
+    case MAPSEC_ROUTE_132:
+    case MAPSEC_ROUTE_133:
+    case MAPSEC_ROUTE_134:
+    case MAPSEC_SKY_PILLAR:
+        return 50;
+
+    // =========================
+    // AFTER JUAN
+    // CAP 63
+    // =========================
+    case MAPSEC_EVER_GRANDE_CITY:
+    case MAPSEC_VICTORY_ROAD:
+        return 63;
+
+    default:
+        return GetCurrentLevelCap();
+    }
+}
+
+u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer *trainer, bool32 firstTrainer, u32 battleTypeFlags, u16 seed)
 {
     u32 personalityValue;
     s32 i;
     u8 monsCount;
+    u8 isTrainerBossTrainer = trainer->isBossTrainer;
     if (battleTypeFlags & BATTLE_TYPE_TRAINER && !(battleTypeFlags & (BATTLE_TYPE_FRONTIER
                                                                         | BATTLE_TYPE_EREADER_TRAINER
                                                                         | BATTLE_TYPE_TRAINER_HILL)))
@@ -1880,6 +2070,26 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
         u32 monIndices[monsCount];
         DoTrainerPartyPool(trainer, monIndices, monsCount, battleTypeFlags);
 
+        u32 trainerLevelCap = GetTrainerHistoricalLevelCap(seed);
+        u32 targetMaxLevel;
+
+        if (trainer->trainerClass == TRAINER_CLASS_RIVAL
+         || trainer->trainerClass == TRAINER_CLASS_AQUA_LEADER
+         || trainer->trainerClass == TRAINER_CLASS_MAGMA_LEADER)
+        {
+            targetMaxLevel = max(1, trainerLevelCap - 1);
+        }
+        else if (trainer->trainerClass == TRAINER_CLASS_AQUA_ADMIN
+              || trainer->trainerClass == TRAINER_CLASS_MAGMA_ADMIN)
+        {
+            targetMaxLevel = max(1, trainerLevelCap - 2);
+        }
+        else
+        {
+            // Ordinary route/gym trainers are 75% of the area's historical cap.
+            targetMaxLevel = max(1, (trainerLevelCap * 75) / 100);
+        }
+
         for (i = 0; i < monsCount; i++)
         {
             u32 monIndex = monIndices[i];
@@ -1889,6 +2099,48 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
             u32 otIdType = OT_ID_RANDOM_NO_SHINY;
             u32 fixedOtId = 0;
             u32 ability = 0;
+            u16 species = partyData[monIndex].species;
+            u32 level = targetMaxLevel;
+
+            bool32 isFirstRival =
+                seed == TRAINER_MAY_ROUTE_103_TREECKO
+             || seed == TRAINER_MAY_ROUTE_103_TORCHIC
+             || seed == TRAINER_MAY_ROUTE_103_MUDKIP
+             || seed == TRAINER_BRENDAN_ROUTE_103_TREECKO
+             || seed == TRAINER_BRENDAN_ROUTE_103_TORCHIC
+             || seed == TRAINER_BRENDAN_ROUTE_103_MUDKIP;
+
+            if (isFirstRival)
+            {
+                level = 9;
+            }
+            else if (trainer->trainerClass == TRAINER_CLASS_LEADER
+                  || trainer->trainerClass == TRAINER_CLASS_ELITE_FOUR
+                  || trainer->trainerClass == TRAINER_CLASS_CHAMPION)
+            {
+                if (monsCount == 1)
+                {
+                    level = trainerLevelCap;
+                }
+                else if (i == monsCount - 1)
+                {
+                    // Ace reaches the area's historical cap.
+                    level = trainerLevelCap;
+                }
+                else if (i == monsCount - 2)
+                {
+                    level = max(1, trainerLevelCap - 2);
+                }
+                else
+                {
+                    level = max(1, trainerLevelCap - 5);
+                }
+            }
+
+            #if (RANDOMIZER_AVAILABLE)
+                if(!isTrainerBossTrainer)
+                    species = RandomizeTrainerMon(seed, i, monsCount, species);
+            #endif
 
             if (trainer->doubleBattle == TRUE)
                 personalityValue = 0x80;
@@ -1910,10 +2162,11 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
                 otIdType = OT_ID_PRESET;
                 fixedOtId = HIHALF(personalityValue) ^ LOHALF(personalityValue);
             }
-            CreateMon(&party[i], partyData[monIndex].species, partyData[monIndex].lvl, 0, TRUE, personalityValue, otIdType, fixedOtId);
+
+            CreateMon(&party[i], species, level, 0, TRUE, personalityValue, otIdType, fixedOtId);
             SetMonData(&party[i], MON_DATA_HELD_ITEM, &partyData[monIndex].heldItem);
 
-            CustomTrainerPartyAssignMoves(&party[i], &partyData[monIndex]);
+            //CustomTrainerPartyAssignMoves(&party[i], &partyData[monIndex]);
             SetMonData(&party[i], MON_DATA_IVS, &(partyData[monIndex].iv));
             if (partyData[monIndex].ev != NULL)
             {
@@ -1946,6 +2199,7 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
                 }
             }
             SetMonData(&party[i], MON_DATA_ABILITY_NUM, &ability);
+            SetMonData(&party[i], MON_DATA_CANT_RANDOMIZE_ABILITY, &isTrainerBossTrainer);
             SetMonData(&party[i], MON_DATA_FRIENDSHIP, &(partyData[monIndex].friendship));
             if (partyData[monIndex].ball != ITEM_NONE)
             {
@@ -1997,7 +2251,7 @@ static u8 CreateNPCTrainerParty(struct Pokemon *party, u16 trainerNum, bool8 fir
     u8 retVal;
     if (trainerNum == TRAINER_SECRET_BASE)
         return 0;
-    retVal = CreateNPCTrainerPartyFromTrainer(party, GetTrainerStructFromId(trainerNum), firstTrainer, gBattleTypeFlags);
+    retVal = CreateNPCTrainerPartyFromTrainer(party, GetTrainerStructFromId(trainerNum), firstTrainer, gBattleTypeFlags, trainerNum);
     return retVal;
 }
 
@@ -2007,7 +2261,7 @@ void CreateTrainerPartyForPlayer(void)
 
     ZeroPlayerPartyMons();
     gPartnerTrainerId = gSpecialVar_0x8004;
-    CreateNPCTrainerPartyFromTrainer(gPlayerParty, GetTrainerStructFromId(gSpecialVar_0x8004), TRUE, BATTLE_TYPE_TRAINER);
+    CreateNPCTrainerPartyFromTrainer(gPlayerParty, GetTrainerStructFromId(gSpecialVar_0x8004), TRUE, BATTLE_TYPE_TRAINER, gSpecialVar_0x8004);
 }
 
 void VBlankCB_Battle(void)
@@ -2959,7 +3213,7 @@ static void ClearSetBScriptingStruct(void)
     memset(&gBattleScripting, 0, sizeof(gBattleScripting));
 
     gBattleScripting.windowsType = temp;
-    gBattleScripting.battleStyle = gSaveBlock2Ptr->optionsBattleStyle;
+    gBattleScripting.battleStyle = OPTIONS_BATTLE_STYLE_SET;
     gBattleScripting.expOnCatch = (B_EXP_CATCH >= GEN_6);
     gBattleScripting.specialTrainerBattleType = specialBattleType;
 }
@@ -2970,6 +3224,7 @@ static void BattleStartClearSetData(void)
 
     TurnValuesCleanUp(FALSE);
     SpecialStatusesClear();
+
 
     memset(&gDisableStructs, 0, sizeof(gDisableStructs));
     memset(&gFieldTimers, 0, sizeof(gFieldTimers));
@@ -3439,7 +3694,7 @@ static void DoBattleIntro(void)
                 gBattleMons[battler].types[0] = gSpeciesInfo[gBattleMons[battler].species].types[0];
                 gBattleMons[battler].types[1] = gSpeciesInfo[gBattleMons[battler].species].types[1];
                 gBattleMons[battler].types[2] = TYPE_MYSTERY;
-                gBattleMons[battler].ability = GetAbilityBySpecies(gBattleMons[battler].species, gBattleMons[battler].abilityNum);
+                gBattleMons[battler].ability = GetAbilityBySpecies(gBattleMons[battler].species, gBattleMons[battler].abilityNum, gBattleMons[battler].cantRandomizeAbility);
                 gBattleStruct->hpOnSwitchout[GetBattlerSide(battler)] = gBattleMons[battler].hp;
                 gBattleMons[battler].status2 = 0;
                 for (i = 0; i < NUM_BATTLE_STATS; i++)

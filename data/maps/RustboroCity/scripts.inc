@@ -478,6 +478,8 @@ RustboroCity_EventScript_ReturnGoodsSpokeToEmployee::
 	goto RustboroCity_EventScript_ReturnGoods
 	end
 
+
+
 RustboroCity_EventScript_HelpGetGoodsTrigger0::
 	lockall
 	setvar VAR_TEMP_1, 0
@@ -599,17 +601,32 @@ RustboroCity_EventScript_ReturnGoods::
 	call_if_eq VAR_TEMP_1, 2, RustboroCity_EventScript_EmployeeFacePlayerDown2
 	call_if_eq VAR_TEMP_1, 3, RustboroCity_EventScript_EmployeeApproachPlayerDown2
 	call_if_eq VAR_TEMP_1, 4, RustboroCity_EventScript_EmployeeFacePlayerRight
+
 	msgbox RustboroCity_Text_YouGotItThankYou, MSGBOX_DEFAULT
-	giveitem ITEM_GREAT_BALL
+
+	giveitem ITEM_LETTER
 	call_if_eq VAR_RESULT, FALSE, RustboroCity_EventScript_BagFull
-	msgbox RustboroCity_Text_PleaseComeWithMe, MSGBOX_DEFAULT
-	closemessage
+
 	setflag FLAG_RETURNED_DEVON_GOODS
 	setflag FLAG_HIDE_RUSTBORO_CITY_DEVON_EMPLOYEE_1
-	setvar VAR_RUSTBORO_CITY_STATE, 5
-	delay 30
-	warp MAP_RUSTBORO_CITY_DEVON_CORP_3F, 2, 2
-	waitstate
+
+	@ Preserve the important progression that used to happen
+	@ in the President/PokeNav sequence.
+	setflag FLAG_HIDE_RUSTBORO_CITY_POKEMON_SCHOOL_SCOTT
+	setflag FLAG_HIDE_ROUTE_116_WANDAS_BOYFRIEND
+	clearflag FLAG_HIDE_RUSTURF_TUNNEL_WANDAS_BOYFRIEND
+	clearflag FLAG_HIDE_RUSTURF_TUNNEL_WANDA
+	clearflag FLAG_HIDE_BRINEYS_HOUSE_MR_BRINEY
+	clearflag FLAG_HIDE_BRINEYS_HOUSE_PEEKO
+	setvar VAR_BRINEY_LOCATION, 1
+	clearflag FLAG_HIDE_RUSTBORO_CITY_RIVAL
+
+	@ Skip both Devon Corp and the forced Match Call tutorial.
+	setvar VAR_DEVON_CORP_3F_STATE, 1
+	setvar VAR_ROUTE104_STATE, 1
+	setflag FLAG_HIDE_RUSTBORO_CITY_SCIENTIST
+	setvar VAR_RUSTBORO_CITY_STATE, 7
+
 	releaseall
 	end
 

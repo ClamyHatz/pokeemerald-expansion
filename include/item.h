@@ -93,17 +93,12 @@ u32 GetItemStatus2Mask(u16 itemId);
  *   ITEM_HM_CUT,
  *   ...
  * }; */
-#define ENUM_TM(id) CAT(ITEM_TM_, id),
 #define ENUM_HM(id) CAT(ITEM_HM_, id),
 enum
 {
-    ENUM_TM_START_ = ITEM_TM01 - 1,
-    FOREACH_TM(ENUM_TM)
-
     ENUM_HM_START_ = ITEM_HM01 - 1,
     FOREACH_HM(ENUM_HM)
 };
-#undef ENUM_TM
 #undef ENUM_HM
 
 #endif // GUARD_ITEM_H
