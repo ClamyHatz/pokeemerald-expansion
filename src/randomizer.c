@@ -338,7 +338,7 @@ u16 RandomizeFoundItem(u16 itemId, u8 mapNum, u8 mapGroup, u8 localId)
     u16 result;
     u32 mapSeed;
 
-    if (IsKeyItem(itemId) || IsFossil(itemId) || itemId == ITEM_NONE)
+    if (!ShouldRandomizeOriginalItem(itemId))
         return itemId;
 
     // Seed the generator using the original item and the object event that led up
@@ -375,8 +375,12 @@ u16 RandomizeGiftItem(u16 itemId, u16 amount, u8 mapNum, u8 mapGroup)
     u16 result;
     u32 mapSeed;
 
-    if (IsKeyItem(itemId) || itemId == ITEM_NONE)
+    if ((IsKeyItem(itemId) && itemId != ITEM_ESCAPE_ROPE)
+     || IsFossil(itemId)
+     || itemId == ITEM_NONE)
+    {
         return itemId;
+    }
 
     // Stable identity for this scripted gift.
     // Same save + map + original item + quantity = same replacement.
@@ -1005,17 +1009,77 @@ u16 RandomizeTrainerMon(u16 trainerId, u8 slot, u8 totalMons, u16 species)
     return species;
 }
 
+#define PREMIUM_LEGENDARY_BST_FLOOR 570
+
+static u16 GetRandomizerSpeciesBST(u16 species)
+{
+    return gSpeciesInfo[species].baseHP
+         + gSpeciesInfo[species].baseAttack
+         + gSpeciesInfo[species].baseDefense
+         + gSpeciesInfo[species].baseSpeed
+         + gSpeciesInfo[species].baseSpAttack
+         + gSpeciesInfo[species].baseSpDefense;
+}
+
+static bool32 IsPremiumLegendaryFixedEncounter(u16 species)
+{
+    switch (species)
+    {
+    case SPECIES_REGIROCK:
+    case SPECIES_REGICE:
+    case SPECIES_REGISTEEL:
+    case SPECIES_RAYQUAZA:
+        return TRUE;
+
+    default:
+        return FALSE;
+    }
+}
+
 u16 RandomizeFixedEncounterMon(u16 species, u8 mapNum, u8 mapGroup, u8 localId)
 {
     if (RandomizerFeatureEnabled(RANDOMIZE_FIXED_MON))
     {
-        // The seed is based on the location of the object event.
         u32 seed;
+        u16 result;
+
         seed = (u32)mapNum << 16;
         seed |= (u32)mapGroup << 8;
         seed |= localId;
 
-        return RandomizeMon(RANDOMIZER_REASON_FIXED_ENCOUNTER, GetRandomizerOption(RANDOMIZER_OPTION_SPECIES_MODE), seed, species);
+        // All normal fixed encounters keep the existing behavior.
+        if (!IsPremiumLegendaryFixedEncounter(species))
+        {
+            return RandomizeMon(
+                RANDOMIZER_REASON_FIXED_ENCOUNTER,
+                GetRandomizerOption(RANDOMIZER_OPTION_SPECIES_MODE),
+                seed,
+                species
+            );
+        }
+
+        // Regirock / Regice / Registeel / Rayquaza:
+        // keep rerolling until the result is at least Paradox-tier BST.
+        {
+            u32 attempt;
+
+            for (attempt = 0; attempt < 1024; attempt++)
+            {
+                result = RandomizeMon(
+                    RANDOMIZER_REASON_FIXED_ENCOUNTER,
+                    GetRandomizerOption(RANDOMIZER_OPTION_SPECIES_MODE),
+                    seed + attempt,
+                    species
+                );
+
+                if (GetRandomizerSpeciesBST(result) >= PREMIUM_LEGENDARY_BST_FLOOR)
+                    return result;
+            }
+        }
+
+        // Extremely defensive fallback.
+        // All four original species are already above the floor.
+        return species;
     }
 
     return species;
@@ -1079,6 +1143,7 @@ u16 RandomizeEggMon(u16 originalSlot, const u16* originalEggMons)
 
             GetUniqueMonList(RANDOMIZER_REASON_EGG, GetRandomizerOption(RANDOMIZER_OPTION_SPECIES_MODE),
                 eggHash, 0, EGG_MON_COUNT, originalEggMons, sRandomizedEggMons);
+            sLastEggMonRandomizerSeed = GetRandomizerSeed();
         }
         return sRandomizedEggMons[originalSlot];
     }

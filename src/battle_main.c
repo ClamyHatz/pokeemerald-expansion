@@ -2100,7 +2100,7 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
             u32 fixedOtId = 0;
             u32 ability = 0;
             u16 species = partyData[monIndex].species;
-            u32 level;
+            u32 level = targetMaxLevel;
 
             bool32 isFirstRival =
                 seed == TRAINER_MAY_ROUTE_103_TREECKO

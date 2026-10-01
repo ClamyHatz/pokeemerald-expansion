@@ -1156,6 +1156,7 @@ void GiveEggFromDaycare(void)
 static bool8 TryProduceOrHatchEgg(struct DayCare *daycare)
 {
     u32 i, validEggs = 0;
+    daycare->stepCounter++;
 
     for (i = 0; i < DAYCARE_MON_COUNT; i++)
     {
@@ -1191,16 +1192,17 @@ static bool8 TryProduceOrHatchEgg(struct DayCare *daycare)
 
             eggCycles = GetMonData(&gPlayerParty[i], MON_DATA_FRIENDSHIP);
 
-            if (eggCycles > toSub)
+            if (eggCycles != 0)
             {
-                eggCycles -= toSub;
+                if (eggCycles > toSub)
+                    eggCycles -= toSub;
+                else
+                    eggCycles = 0;
+
                 SetMonData(&gPlayerParty[i], MON_DATA_FRIENDSHIP, &eggCycles);
             }
             else
             {
-                eggCycles = 0;
-                SetMonData(&gPlayerParty[i], MON_DATA_FRIENDSHIP, &eggCycles);
-
                 gSpecialVar_0x8004 = i;
                 return TRUE;
             }

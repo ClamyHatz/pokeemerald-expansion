@@ -172,6 +172,24 @@ static void Task_CallItemUseOnFieldCallback(u8 taskId)
 
 void ItemUseOutOfBattle_PortableHeal(u8 var)
 {
+    u16 currentMap = gSaveBlock1Ptr->location.mapNum
+                   | (gSaveBlock1Ptr->location.mapGroup << 8);
+
+    if (currentMap == MAP_EVER_GRANDE_CITY_SIDNEYS_ROOM
+         || currentMap == MAP_EVER_GRANDE_CITY_PHOEBES_ROOM
+         || currentMap == MAP_EVER_GRANDE_CITY_GLACIAS_ROOM
+         || currentMap == MAP_EVER_GRANDE_CITY_DRAKES_ROOM
+         || currentMap == MAP_EVER_GRANDE_CITY_CHAMPIONS_ROOM
+         || currentMap == MAP_EVER_GRANDE_CITY_HALL1
+         || currentMap == MAP_EVER_GRANDE_CITY_HALL2
+         || currentMap == MAP_EVER_GRANDE_CITY_HALL3
+         || currentMap == MAP_EVER_GRANDE_CITY_HALL4
+         || currentMap == MAP_EVER_GRANDE_CITY_HALL5)
+    {
+        ItemUseOutOfBattle_CannotUse(var);
+        return;
+    }
+
     sItemUseOnFieldCB = ItemUseOnFieldCB_PortableHeal;
     SetUpItemUseOnFieldCallback(var);
 }
