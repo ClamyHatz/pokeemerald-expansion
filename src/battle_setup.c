@@ -11,6 +11,8 @@
 #include "metatile_behavior.h"
 #include "field_player_avatar.h"
 #include "fieldmap.h"
+#include "save.h"
+#include "main.h"
 #include "random.h"
 #include "starter_choose.h"
 #include "script_pokemon_util.h"
@@ -80,6 +82,7 @@ static void RegisterTrainerInMatchCall(void);
 static void HandleRematchVarsOnBattleEnd(void);
 static const u8 *GetIntroSpeechOfApproachingTrainer(void);
 static const u8 *GetTrainerCantBattleSpeech(void);
+static void NuzlockeGameOver(void);
 
 EWRAM_DATA TrainerBattleParameter gTrainerBattleParameter = {0};
 EWRAM_DATA u16 gPartnerTrainerId = 0;
@@ -228,6 +231,12 @@ const struct RematchTrainer gRematchTable[REMATCH_TABLE_ENTRIES] =
 
 #define tState data[0]
 #define tTransition data[1]
+
+static void NuzlockeGameOver(void)
+{
+    ClearSaveData();
+    DoSoftReset();
+}
 
 static void Task_BattleStart(u8 taskId)
 {
@@ -576,14 +585,15 @@ static void CB2_EndWildBattle(void)
 
     if (IsPlayerDefeated(gBattleOutcome) == TRUE && !InBattlePyramid() && !InBattlePike())
     {
-        SetMainCallback2(CB2_WhiteOut);
+         NuzlockeGameOver();
+         return;
     }
-    else
-    {
-        SetMainCallback2(CB2_ReturnToField);
-        DowngradeBadPoison();
-        gFieldCallback = FieldCB_ReturnToFieldNoScriptCheckMusic;
-    }
+
+    ProcessNuzlockeDeaths();
+
+    SetMainCallback2(CB2_ReturnToField);
+    DowngradeBadPoison();
+    gFieldCallback = FieldCB_ReturnToFieldNoScriptCheckMusic;
 }
 
 static void CB2_EndScriptedWildBattle(void)
@@ -594,12 +604,20 @@ static void CB2_EndScriptedWildBattle(void)
     if (IsPlayerDefeated(gBattleOutcome) == TRUE)
     {
         if (InBattlePyramid())
+        {
             SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
+            NuzlockeGameOver();
+            return;
+        }
         else
-            SetMainCallback2(CB2_WhiteOut);
+        {
+            NuzlockeGameOver();
+            return;
+        }
     }
     else
     {
+        ProcessNuzlockeDeaths();
         DowngradeBadPoison();
         SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
     }
@@ -1273,20 +1291,30 @@ static void CB2_EndTrainerBattle(void)
 
     if (TRAINER_BATTLE_PARAM.opponentA == TRAINER_SECRET_BASE)
     {
+        ProcessNuzlockeDeaths();
         DowngradeBadPoison();
         SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
     }
     else if (IsPlayerDefeated(gBattleOutcome) == TRUE)
     {
         if (InBattlePyramid() || InTrainerHillChallenge() || (!NoAliveMonsForPlayer()))
+        {
+            ProcessNuzlockeDeaths();
             SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
+        }
         else
-            SetMainCallback2(CB2_WhiteOut);
+        {
+            NuzlockeGameOver();
+            return;
+        }
     }
     else
     {
+        ProcessNuzlockeDeaths();
+
         SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
         DowngradeBadPoison();
+
         if (!InBattlePyramid() && !InTrainerHillChallenge())
         {
             RegisterTrainerInMatchCall();
@@ -1299,20 +1327,27 @@ static void CB2_EndRematchBattle(void)
 {
     if (TRAINER_BATTLE_PARAM.opponentA == TRAINER_SECRET_BASE)
     {
+        ProcessNuzlockeDeaths();
         DowngradeBadPoison();
         SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
     }
     else if (IsPlayerDefeated(gBattleOutcome) == TRUE)
     {
-        SetMainCallback2(CB2_WhiteOut);
+        NuzlockeGameOver();
+        return;
     }
     else
     {
+        ProcessNuzlockeDeaths();
+
         SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
-        RegisterTrainerInMatchCall();
-        SetBattledTrainersFlags();
-        HandleRematchVarsOnBattleEnd();
         DowngradeBadPoison();
+
+        if (!InBattlePyramid() && !InTrainerHillChallenge())
+        {
+            RegisterTrainerInMatchCall();
+            SetBattledTrainersFlags();
+        }
     }
 }
 

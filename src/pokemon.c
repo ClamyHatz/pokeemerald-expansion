@@ -5278,6 +5278,133 @@ void AdjustFriendship(struct Pokemon *mon, u8 event)
     }
 }
 
+bool32 IsMonNuzlockeDead(const struct Pokemon *mon)
+{
+    return mon->box.isNuzlockeDead;
+}
+
+bool32 IsBoxMonNuzlockeDead(const struct BoxPokemon *boxMon)
+{
+    return boxMon->isNuzlockeDead;
+}
+
+void SetMonNuzlockeDead(struct Pokemon *mon)
+{
+    mon->box.isNuzlockeDead = TRUE;
+}
+
+bool32 SendNuzlockeDeadMonToPC(struct Pokemon *mon)
+{
+    s32 boxId;
+    s32 boxPos;
+
+    SetMonNuzlockeDead(mon);
+
+    for (boxId = TOTAL_BOXES_COUNT - 1; boxId >= 0; boxId--)
+    {
+        for (boxPos = 0; boxPos < IN_BOX_COUNT; boxPos++)
+        {
+            struct BoxPokemon *boxMon = GetBoxedMonPtr(boxId, boxPos);
+
+            if (GetBoxMonData(boxMon, MON_DATA_SPECIES) == SPECIES_NONE)
+            {
+                SetBoxMonAt(boxId, boxPos, &mon->box);
+                return TRUE;
+            }
+        }
+    }
+
+    return FALSE;
+}
+
+bool32 IsMonNuzlockeDead(const struct Pokemon *mon)
+{
+    return mon->box.isNuzlockeDead;
+}
+
+bool32 IsBoxMonNuzlockeDead(const struct BoxPokemon *boxMon)
+{
+    return boxMon->isNuzlockeDead;
+}
+
+void SetMonNuzlockeDead(struct Pokemon *mon)
+{
+    mon->box.isNuzlockeDead = TRUE;
+}
+
+bool32 SendNuzlockeDeadMonToPC(struct Pokemon *mon)
+{
+    s32 boxId;
+    s32 boxPos;
+
+    SetMonNuzlockeDead(mon);
+
+    for (boxId = TOTAL_BOXES_COUNT - 1; boxId >= 0; boxId--)
+    {
+        for (boxPos = 0; boxPos < IN_BOX_COUNT; boxPos++)
+        {
+            struct BoxPokemon *boxMon = GetBoxedMonPtr(boxId, boxPos);
+
+            if (GetBoxMonData(boxMon, MON_DATA_SPECIES) == SPECIES_NONE)
+            {
+                SetBoxMonAt(boxId, boxPos, &mon->box);
+                return TRUE;
+            }
+        }
+    }
+
+    return FALSE;
+}
+
+void ProcessNuzlockeDeaths(void)
+{
+    s32 i;
+    s32 writeSlot = 0;
+
+    for (i = 0; i < PARTY_SIZE; i++)
+    {
+        u32 species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES);
+
+        if (species == SPECIES_NONE)
+            continue;
+
+        if (GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG))
+            continue;
+
+        if (GetMonData(&gPlayerParty[i], MON_DATA_HP) == 0)
+        {
+            if (SendNuzlockeDeadMonToPC(&gPlayerParty[i]))
+            {
+                ZeroMonData(&gPlayerParty[i]);
+                continue;
+            }
+
+            // If storage is somehow completely full, keep the mon
+            // but permanently mark it dead.
+            SetMonNuzlockeDead(&gPlayerParty[i]);
+        }
+    }
+
+    for (i = 0; i < PARTY_SIZE; i++)
+    {
+        if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES) != SPECIES_NONE)
+        {
+            if (i != writeSlot)
+                gPlayerParty[writeSlot] = gPlayerParty[i];
+
+            writeSlot++;
+        }
+    }
+
+    while (writeSlot < PARTY_SIZE)
+    {
+        ZeroMonData(&gPlayerParty[writeSlot]);
+        writeSlot++;
+    }
+
+    gPlayerPartyCount = CalculatePartyCount(gPlayerParty);
+}
+
 void MonGainEVs(struct Pokemon *mon, u16 defeatedSpecies)
 {
     return;

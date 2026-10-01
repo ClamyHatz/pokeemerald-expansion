@@ -555,6 +555,8 @@ static const u16 sRandomizerItemWhitelist[] =
     //ITEM_SCROLL_OF_WATERS,
     //ITEM_TERA_ORB,
     //ITEM_TINY_BAMBOO_SHOOT,
+    ITEM_ABILITY_CAPSULE,
+    ITEM_ABILITY_PATCH,
 };
 
 #define ITEM_WHITELIST_SIZE     (NELEMS(sRandomizerItemWhitelist))

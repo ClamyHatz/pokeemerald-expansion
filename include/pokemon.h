@@ -257,7 +257,7 @@ struct BoxPokemon
     u8 isEgg:1;
     u8 blockBoxRS:1; // Unused, but Pokémon Box Ruby & Sapphire will refuse to deposit a Pokémon with this flag set.
     u8 daysSinceFormChange:3; // 7 days.
-    u8 unused_13:1;
+    u8 isNuzlockeDead:1;
     u8 otName[PLAYER_NAME_LENGTH];
     u8 markings:4;
     u8 compressedStatus:4;
@@ -654,6 +654,15 @@ bool8 ShouldIgnoreDeoxysForm(u8 caseId, u8 battlerId);
 u16 GetUnionRoomTrainerPic(void);
 u16 GetUnionRoomTrainerClass(void);
 bool32 CanPartyMenuEvolve(struct Pokemon *mon);
+bool32 IsMonNuzlockeDead(const struct Pokemon *mon);
+bool32 IsBoxMonNuzlockeDead(const struct BoxPokemon *boxMon);
+bool32 SendNuzlockeDeadMonToPC(struct Pokemon *mon);
+bool32 IsMonNuzlockeDead(const struct Pokemon *mon);
+bool32 IsBoxMonNuzlockeDead(const struct BoxPokemon *boxMon);
+void SetMonNuzlockeDead(struct Pokemon *mon);
+bool32 SendNuzlockeDeadMonToPC(struct Pokemon *mon);
+void ProcessNuzlockeDeaths(void);
+void SetMonNuzlockeDead(struct Pokemon *mon);
 u16 GetPartyMenuEvolutionTarget(struct Pokemon *mon);
 bool32 CanPartyMenuEvolve(struct Pokemon *mon);
 u16 GetPartyMenuEvolutionTarget(struct Pokemon *mon);
